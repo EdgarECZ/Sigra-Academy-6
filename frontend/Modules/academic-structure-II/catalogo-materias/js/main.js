@@ -1,158 +1,3 @@
-/*const viewContainer = document.getElementById('view-container');
-
-function showView(view, id = null) {
-    if (view === 'catalogo') renderCatalogo();
-    if (view === 'crear') renderForm(null);
-    if (view === 'editar') renderForm(materiasOriginales.find(m => m.id === id));
-}
-
-function renderCatalogo() {
-    viewContainer.innerHTML = `
-        <div class="module-header">
-            <div>
-                <h1>Catálogo de Materias</h1>
-                <p>Consulte y gestione el listado completo de asignaturas académicas activas.</p>
-            </div>
-            <button class="btn-primary" onclick="showView('crear')"><i class='bx bx-plus'></i> Nueva Asignatura</button>
-        </div>
-
-        <div class="filter-card">
-            <div class="filter-group">
-                <label>Buscar</label>
-                <div class="input-search-wrapper">
-                    <i class='bx bx-search'></i>
-                    <input type="text" id="q-search" placeholder="Buscar por nombre, código o ID..." onkeyup="if(event.key==='Enter') doSearch()">
-                </div>
-            </div>
-            <button class="btn-reset" onclick="resetSearch()"><i class='bx bx-refresh'></i> Resetear</button>
-            <button class="btn-primary" onclick="doSearch()"><i class='bx bx-search-alt'></i> Buscar</button>
-        </div>
-
-        <div class="table-card">
-            <table>
-                <thead>
-                    <tr><th>ID</th><th>CÓDIGO</th><th>NOMBRE</th><th>DESCRIPCIÓN</th><th>CARGA HORARIA</th><th>ACCIONES</th></tr>
-                </thead>
-                <tbody id="table-body">${renderRows(materias)}</tbody>
-            </table>
-        </div>
-    `;
-}
-
-function renderRows(data) {
-    return data.map(m => `
-        <tr>
-            <td style="color:#94a3b8">${m.id}</td>
-            <td><span class="badge-code">${m.codigo}</span></td>
-            <td><strong>${m.nombre}</strong></td>
-            <td style="color:var(--text-muted); max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${m.descripcion}</td>
-            <td class="carga-horaria"><i class='bx bx-time-five'></i>   ${m.horas}h</td>
-            <td>
-                <button onclick="showView('editar', '${m.id}')" style="border:none; background:none; color:var(--primary); font-size:18px; cursor:pointer;" title="Editar Asignatura"><i class='bx bx-edit-alt'></i></button>
-                <button onclick="openDelete('${m.id}')" style="border:none; background:none; color:var(--danger); font-size:18px; cursor:pointer; margin-left:10px;" title="Eliminar Asignatura"><i class='bx bx-trash'></i></button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-function renderForm(m) {
-    const isEdit = !!m;
-    viewContainer.innerHTML = `
-        <div style="margin-bottom:20px; font-size:13px; color:var(--text-muted);">
-            Inicio / Gestión de Materias / <span style="color:var(--primary); font-weight:700;">${isEdit ? 'Editar' : 'Crear Nueva'}</span>
-        </div>
-        <h1 style="margin-bottom:30px;">${isEdit ? 'Editar Asignatura' : 'Crear Nueva Asignatura'}</h1>
-        
-        <div class="table-card" style="padding:40px; position:relative;">
-            <div style="position:absolute; top:0; left:0; width:100%; height:4px; background:var(--primary);"></div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
-                <div class="filter-group" style="grid-column: span 2;">
-                    <label>Nombre de la Materia *</label>
-                    <div class="input-search-wrapper"><i class='bx bx-book'></i><input id="f-nombre" type="text" value="${isEdit ? m.nombre : ''}"></div>
-                </div>
-                <div class="filter-group">
-                    <label>Código Identificador *</label>
-                    <div class="input-search-wrapper"><i class='bx bx-hash'></i><input id="f-codigo" type="text" value="${isEdit ? m.codigo : ''}"></div>
-                </div>
-                <div class="filter-group">
-                    <label>Estado del Curso</label>
-                    <select id="f-estado" style="padding:11px; border-radius:8px; border:1px solid var(--border);">
-                        <option ${isEdit && m.estado==='Activo'?'selected':''}>Activo</option>
-                        <option ${isEdit && m.estado==='Inactivo'?'selected':''}>Inactivo</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Carga Horaria Semanal *</label>
-                    <div class="input-search-wrapper">
-                        <i class='bx bx-time'></i>
-                        <input id="f-horas" type="number" value="${isEdit ? m.horas : ''}">
-                        <span style="position:absolute; right:15px; color:var(--text-muted); font-size:12px;">Horas</span>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label>Créditos Académicos</label>
-                    <div class="input-search-wrapper"><i class='bx bx-star'></i><input id="f-creditos" type="number" value="${isEdit ? m.creditos : '0'}"></div>
-                </div>
-                <div class="filter-group" style="grid-column: span 2;">
-                    <label>Descripción / Síntesis</label>
-                    <textarea id="f-desc" rows="4" style="padding:15px; border-radius:8px; border:1px solid var(--border);">${isEdit ? m.descripcion : ''}</textarea>
-                </div>
-            </div>
-            <div style="display:flex; justify-content:flex-end; gap:15px; margin-top:30px;">
-                <button class="btn-cancel" onclick="showView('catalogo')">Cancelar</button>
-                <button class="btn-save" onclick="saveData('${isEdit ? m.id : ''}')">${isEdit ? 'Guardar Cambios' : 'Crear Asignatura'}</button>
-            </div>
-        </div>
-    `;
-}
-
-// Lógica de Búsqueda
-function doSearch() {
-    const q = document.getElementById('q-search').value.toLowerCase();
-    materias = materiasOriginales.filter(m => m.nombre.toLowerCase().includes(q) || m.codigo.toLowerCase().includes(q) || m.id.includes(q));
-    document.getElementById('table-body').innerHTML = renderRows(materias);
-}
-
-function resetSearch() {
-    document.getElementById('q-search').value = "";
-    materias = [...materiasOriginales];
-    document.getElementById('table-body').innerHTML = renderRows(materias);
-}
-
-// Guardar
-function saveData(id) {
-    const obj = {
-        nombre: document.getElementById('f-nombre').value,
-        codigo: document.getElementById('f-codigo').value,
-        horas: document.getElementById('f-horas').value,
-        creditos: document.getElementById('f-creditos').value,
-        descripcion: document.getElementById('f-desc').value,
-        estado: document.getElementById('f-estado').value
-    };
-
-    if (id) {
-        let idx = materiasOriginales.findIndex(m => m.id === id);
-        materiasOriginales[idx] = { ...materiasOriginales[idx], ...obj };
-    } else {
-        const newId = (materiasOriginales.length + 1).toString().padStart(3, '0');
-        materiasOriginales.push({ id: newId, ...obj, estudiantes: 0, grupos: 0, promedio: '0/100' });
-    }
-    materias = [...materiasOriginales];
-    showView('catalogo');
-}
-
-// Borrar
-let idDel = null;
-function openDelete(id) { idDel = id; document.getElementById('delete-modal').style.display = 'flex'; }
-function closeDel() { document.getElementById('delete-modal').style.display = 'none'; }
-function confirmDel() {
-    materiasOriginales = materiasOriginales.filter(m => m.id !== idDel);
-    materias = [...materiasOriginales];
-    closeDel();
-    renderCatalogo();
-}
-
-window.onload = () => showView('catalogo'); */
 // ==========================================
 // LÓGICA PRINCIPAL CON PAGINACIÓN Y FILTROS
 // ==========================================
@@ -304,8 +149,6 @@ function resetSearch() {
     updateTable();
 }
 
-// Resto de funciones (saveData, openDelete, etc.) se mantienen igual...
-
 // ------------------------------------------
 // LÓGICA: GUARDAR DATOS (CREAR / EDITAR)
 // ------------------------------------------
@@ -359,6 +202,71 @@ function confirmDel() {
     materias = [...materiasOriginales]; // Actualizamos la lista visible
     closeDel(); // Cerramos modal
     renderCatalogo(); // Re-renderizamos la tabla
+}
+
+// ------------------------------------------
+// FORMULARIO: CREAR / EDITAR
+// ------------------------------------------
+function renderForm(m) {
+    const isEdit = !!m;
+    viewContainer.innerHTML = `
+        <div style="margin-bottom:20px; font-size:13px; color:var(--text-muted);">
+            Inicio / Gestión de Materias / <span style="color:var(--primary); font-weight:700;">${isEdit ? 'Editar' : 'Crear Nueva'}</span>
+        </div>
+        <h1 style="margin-bottom:30px;">${isEdit ? 'Editar Asignatura' : 'Crear Nueva Asignatura'}</h1>
+        
+        <div class="table-card" style="padding:40px; position:relative;">
+            <div style="position:absolute; top:0; left:0; width:100%; height:4px; background:var(--primary);"></div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:25px;">
+                <div class="filter-group" style="grid-column: span 3;">
+                    <label>Nombre de la Materia *</label>
+                    <div class="input-search-wrapper"><i class='bx bx-book'></i><input id="f-nombre" type="text" value="${isEdit ? m.nombre : ''}"></div>
+                </div>
+                <div class="filter-group">
+                    <label>Código Identificador *</label>
+                    <div class="input-search-wrapper"><i class='bx bx-hash'></i><input id="f-codigo" type="text" value="${isEdit ? m.codigo : ''}"></div>
+                </div>
+                <div class="filter-group">
+                    <label>Estado del Curso</label>
+                    <select id="f-estado" style="padding:11px; border-radius:8px; border:1px solid var(--border);">
+                        <option ${isEdit && m.estado==='Activo'?'selected':''}>Activo</option>
+                        <option ${isEdit && m.estado==='Inactivo'?'selected':''}>Inactivo</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Año *</label>
+                    <select id="f-anio" style="padding:11px; border-radius:8px; border:1px solid var(--border);">
+                        <option value="">Seleccionar Año</option>
+                        <option value="1er Año" ${isEdit && m.anio==='1er Año'?'selected':''}>1er Año</option>
+                        <option value="2do Año" ${isEdit && m.anio==='2do Año'?'selected':''}>2do Año</option>
+                        <option value="3er Año" ${isEdit && m.anio==='3er Año'?'selected':''}>3er Año</option>
+                        <option value="4to Año" ${isEdit && m.anio==='4to Año'?'selected':''}>4to Año</option>
+                        <option value="5to Año" ${isEdit && m.anio==='5to Año'?'selected':''}>5to Año</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Carga Horaria Semanal *</label>
+                    <div class="input-search-wrapper">
+                        <i class='bx bx-time'></i>
+                        <input id="f-horas" type="number" value="${isEdit ? m.horas : ''}">
+                        <span style="position:absolute; right:15px; color:var(--text-muted); font-size:12px;">Horas</span>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Créditos Académicos</label>
+                    <div class="input-search-wrapper"><i class='bx bx-star'></i><input id="f-creditos" type="number" value="${isEdit ? m.creditos : '0'}"></div>
+                </div>
+                <div class="filter-group" style="grid-column: span 3;">
+                    <label>Descripción / Síntesis</label>
+                    <textarea id="f-desc" rows="4" style="padding:15px; border-radius:8px; border:1px solid var(--border);">${isEdit ? m.descripcion : ''}</textarea>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:15px; margin-top:30px;">
+                <button class="btn-cancel" onclick="showView('catalogo')">Cancelar</button>
+                <button class="btn-save" onclick="saveData('${isEdit ? m.id : ''}')">${isEdit ? 'Guardar Cambios' : 'Crear Asignatura'}</button>
+            </div>
+        </div>
+    `;
 }
 
 // Al cargar la página, mostrar el catálogo por defecto
