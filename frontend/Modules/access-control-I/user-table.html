@@ -46,6 +46,26 @@
     </div>
 
     <div class="actions">
+      <div class="filters" aria-label="Filtros y buscador">
+        <div class="filter-group">
+          <label for="role-filter">Rol</label>
+          <select id="role-filter" aria-label="Filtrar por rol">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="status-filter">Estado</label>
+          <select id="status-filter" aria-label="Filtrar por estado">
+            <option value="">Todos</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Inactivos</option>
+          </select>
+        </div>
+        <div class="filter-group search">
+          <label for="search-input">Buscar</label>
+          <input id="search-input" type="search" placeholder="Nombre o correo" aria-label="Buscar por nombre o correo" />
+        </div>
+      </div>
       <button class="ghost-btn" type="button">Agregar usuario nuevo</button>
     </div>
 
@@ -62,121 +82,9 @@
               <th scope="col">Acciones</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="user-tbody">
             <tr>
-              <td>ana.garcia</td>
-              <td>Administrador</td>
-              <td><span class="badge active">Activo</span></td>
-              <td>ana.garcia@sigra.edu</td>
-              <td class="actions-cell">
-                <a class="icon-link" href="#" aria-label="Editar usuario">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M4 20h4l9.5-9.5a1.5 1.5 0 0 0 0-2.12l-1.88-1.88a1.5 1.5 0 0 0-2.12 0L4 16v4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                    <path d="M13.5 6.5 17.5 10.5" stroke="currentColor" stroke-width="1.6" />
-                  </svg>
-                </a>
-                <a class="icon-link danger" href="#" aria-label="Eliminar usuario">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M5.5 7h13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M10 10v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M14 10v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M9 7V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M6.5 7 7 18a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l.5-11" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                  </svg>
-                </a>
-              </td>
-            </tr>
-            <tr>
-              <td>luis.perez</td>
-              <td>Docente</td>
-              <td><span class="badge active">Activo</span></td>
-              <td>luis.perez@sigra.edu</td>
-              <td class="actions-cell">
-                <a class="icon-link" href="#" aria-label="Editar usuario">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M4 20h4l9.5-9.5a1.5 1.5 0 0 0 0-2.12l-1.88-1.88a1.5 1.5 0 0 0-2.12 0L4 16v4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                    <path d="M13.5 6.5 17.5 10.5" stroke="currentColor" stroke-width="1.6" />
-                  </svg>
-                </a>
-                <a class="icon-link danger" href="#" aria-label="Eliminar usuario">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M5.5 7h13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M10 10v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M14 10v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M9 7V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M6.5 7 7 18a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l.5-11" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                  </svg>
-                </a>
-              </td>
-            </tr>
-            <tr>
-              <td>carlos.rodriguez</td>
-              <td>Estudiante</td>
-              <td><span class="badge inactive">Inactivo</span></td>
-              <td>carlos.rodriguez@sigra.edu</td>
-              <td class="actions-cell">
-                <a class="icon-link" href="#" aria-label="Editar usuario">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M4 20h4l9.5-9.5a1.5 1.5 0 0 0 0-2.12l-1.88-1.88a1.5 1.5 0 0 0-2.12 0L4 16v4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                    <path d="M13.5 6.5 17.5 10.5" stroke="currentColor" stroke-width="1.6" />
-                  </svg>
-                </a>
-                <a class="icon-link danger" href="#" aria-label="Eliminar usuario">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M5.5 7h13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M10 10v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M14 10v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M9 7V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M6.5 7 7 18a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l.5-11" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                  </svg>
-                </a>
-              </td>
-            </tr>
-            <tr>
-              <td>sofia.martinez</td>
-              <td>Docente</td>
-              <td><span class="badge active">Activo</span></td>
-              <td>sofia.martinez@sigra.edu</td>
-              <td class="actions-cell">
-                <a class="icon-link" href="#" aria-label="Editar usuario">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M4 20h4l9.5-9.5a1.5 1.5 0 0 0 0-2.12l-1.88-1.88a1.5 1.5 0 0 0-2.12 0L4 16v4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                    <path d="M13.5 6.5 17.5 10.5" stroke="currentColor" stroke-width="1.6" />
-                  </svg>
-                </a>
-                <a class="icon-link danger" href="#" aria-label="Eliminar usuario">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M5.5 7h13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M10 10v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M14 10v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M9 7V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M6.5 7 7 18a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l.5-11" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                  </svg>
-                </a>
-              </td>
-            </tr>
-            <tr>
-              <td>javier.lopez</td>
-              <td>Estudiante</td>
-              <td><span class="badge active">Activo</span></td>
-              <td>javier.lopez@sigra.edu</td>
-              <td class="actions-cell">
-                <a class="icon-link" href="#" aria-label="Editar usuario">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M4 20h4l9.5-9.5a1.5 1.5 0 0 0 0-2.12l-1.88-1.88a1.5 1.5 0 0 0-2.12 0L4 16v4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                    <path d="M13.5 6.5 17.5 10.5" stroke="currentColor" stroke-width="1.6" />
-                  </svg>
-                </a>
-                <a class="icon-link danger" href="#" aria-label="Eliminar usuario">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M5.5 7h13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M10 10v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M14 10v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M9 7V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <path d="M6.5 7 7 18a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l.5-11" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                  </svg>
-                </a>
-              </td>
+              <td colspan="5">Cargando usuarios...</td>
             </tr>
           </tbody>
         </table>
@@ -193,5 +101,107 @@
       </div>
     </section>
   </main>
+  <script>
+    (() => {
+      const API_BASE = 'http://localhost:3000/api/access-control'
+      const tbody = document.getElementById('user-tbody')
+      const roleFilter = document.getElementById('role-filter')
+      const statusFilter = document.getElementById('status-filter')
+      const searchInput = document.getElementById('search-input')
+
+      let users = []
+
+      const renderStatus = (isActive) => {
+        const active = Boolean(isActive)
+        const cls = active ? 'badge active' : 'badge inactive'
+        const label = active ? 'Activo' : 'Inactivo'
+        return `<span class="${cls}">${label}</span>`
+      }
+
+      const renderRow = (u) => {
+        const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Sin nombre'
+        const mail = u.mail || 'Sin correo'
+        const role = u.role_id ?? 'N/D'
+        return `
+          <tr>
+            <td>${fullName}</td>
+            <td>${role}</td>
+            <td>${renderStatus(u.is_active)}</td>
+            <td>${mail}</td>
+            <td class="actions-cell">
+              <a class="icon-link" href="#" aria-label="Editar usuario">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M4 20h4l9.5-9.5a1.5 1.5 0 0 0 0-2.12l-1.88-1.88a1.5 1.5 0 0 0-2.12 0L4 16v4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                  <path d="M13.5 6.5 17.5 10.5" stroke="currentColor" stroke-width="1.6" />
+                </svg>
+              </a>
+              <a class="icon-link danger" href="#" aria-label="Eliminar usuario">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M5.5 7h13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M10 10v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M14 10v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M9 7V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M6.5 7 7 18a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l.5-11" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                </svg>
+              </a>
+            </td>
+          </tr>
+        `
+      }
+
+      const renderEmpty = (message) => {
+        tbody.innerHTML = `<tr><td colspan="5">${message}</td></tr>`
+      }
+
+      const renderTable = () => {
+        const roleValue = roleFilter.value
+        const statusValue = statusFilter.value
+        const term = searchInput.value.trim().toLowerCase()
+
+        const filtered = users.filter((u) => {
+          const matchesRole = roleValue === '' || String(u.role_id) === roleValue
+          const matchesStatus =
+            statusValue === '' || (statusValue === 'active' && Boolean(u.is_active)) || (statusValue === 'inactive' && !Boolean(u.is_active))
+          const haystack = `${u.first_name || ''} ${u.last_name || ''} ${u.mail || ''}`.toLowerCase()
+          const matchesSearch = term === '' || haystack.includes(term)
+          return matchesRole && matchesStatus && matchesSearch
+        })
+
+        if (filtered.length === 0) {
+          renderEmpty('No hay usuarios con los filtros actuales')
+          return
+        }
+
+        tbody.innerHTML = filtered.map(renderRow).join('')
+      }
+
+      const populateRoles = () => {
+        const uniqueRoles = Array.from(new Set(users.map((u) => u.role_id).filter((v) => v !== undefined && v !== null)))
+        uniqueRoles.sort((a, b) => Number(a) - Number(b))
+        const options = uniqueRoles.map((r) => `<option value="${r}">Rol ${r}</option>`).join('')
+        roleFilter.insertAdjacentHTML('beforeend', options)
+      }
+
+      const loadUsers = async () => {
+        try {
+          const res = await fetch(`${API_BASE}/users`)
+          if (!res.ok) throw new Error('No se pudo obtener la lista de usuarios')
+          const data = await res.json()
+          users = Array.isArray(data) ? data : []
+          populateRoles()
+          renderTable()
+        } catch (error) {
+          console.error('Error cargando usuarios:', error)
+          renderEmpty('No se pudo cargar la lista de usuarios')
+        }
+      }
+
+      roleFilter.addEventListener('change', renderTable)
+      statusFilter.addEventListener('change', renderTable)
+      searchInput.addEventListener('input', renderTable)
+
+      loadUsers()
+    })()
+  </script>
 </body>
 </html>
