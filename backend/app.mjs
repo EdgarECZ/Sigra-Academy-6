@@ -74,6 +74,9 @@ app.get('/test/users', async (req, res) => {
 app.use('/api/subjects', subjectRoute)
 app.use('/api/prelacies', prelaciesRoute)
 
+// >>> MONTA MANAGEMENT ANTES DEL LISTEN <<<
+app.use("/api/management", managementRoute);
+
 // Montamos el servidor
 app.listen(SETTINGS.PORT, () => {
 	console.log(
