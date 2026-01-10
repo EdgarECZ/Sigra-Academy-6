@@ -1,64 +1,43 @@
-import { z } from 'zod'
+import {z} from "zod";
 
-// Esquema para validar params de GET /users/:id
-export const getUserParamsSchema = z.object({
-  id: z.coerce.number().int().positive()
-})
+// Esquema de valdiación para la creación de un usuario
+const createdSchemaUser = z.object({
+  role_id: z.number().int().positive(),
+  first_name: z.string().min(1).max(50),
+  last_name: z.string().min(1).max(50),
+  email: z.string().email().max(100),
+  phone: z.string().min(7).max(15),
+  password_hash: z.string().min(6).max(100)
+});
 
-export function validateGetUser(req, res, next) {
-  const result = getUserParamsSchema.safeParse(req.params)
-  if (!result.success) {
-    return res.status(400).json({ message: 'Invalid parameters', errors: result.error.errors })
-  }
+// Esquema de validación para el inicio de sesión de un usuario
+const loginSchemaUser = z.object({
+  email: z.string().email().max(100),
+  password_hash: z.string().min(6).max(100)
+});
 
-  // Reemplazamos el id en params por su versión numérica
-  req.params.id = result.data.id
-  return next()
+// Esquema de validación para la actualización de un usuario
+const updateSchemaUser = z.object({
+  role_id: z.number().int().positive().optional(),
+  first_name: z.string().min(1).max(50).optional(),
+  last_name: z.string().min(1).max(50).optional(),
+  email: z.string().email().max(100).optional(),
+  phone: z.string().min(7).max(15).optional(),
+  password_hash: z.string().min(6).max(100).optional(),
+  is_active: z.boolean().optional()
+});
+
+// Función para validar los datos de creación de un usuario
+export function validateCreateUser(data){
+  return createdSchemaUser.safeParse(data);
 }
 
-// Esquema para validar params de GET /users/name/:name
-export const getUserNameParamsSchema = z.object({
-  name: z.string().min(1)
-})
-
-export function validateGetUserName(req, res, next) {
-  const result = getUserNameParamsSchema.safeParse(req.params)
-  if (!result.success) {
-    return res.status(400).json({ message: 'Invalid parameters', errors: result.error.errors })
-  }
-
-  req.params.name = result.data.name
-  return next()
+// Función para validar los datos de inicio de sesión de un usuario
+export function validateLoginUser(data){
+  return loginSchemaUser.safeParse(data);
 }
 
-// Esquema para validar params de GET /users/email/:email
-export const getUserEmailParamsSchema = z.object({
-  email: z.string().email()
-})
-
-export function validateGetUserEmail(req, res, next) {
-  const result = getUserEmailParamsSchema.safeParse(req.params)
-  if (!result.success) {
-    return res.status(400).json({ message: 'Invalid parameters', errors: result.error.errors })
-  }
-
-  req.params.email = result.data.email
-  return next()
+// Función para validar los datos de actualización de un usuario
+export function validateUpdateUser(data){
+  return updateSchemaUser.partial().safeParse(data);
 }
-
-// Esquema para validar params de GET /roles/:id
-export const getRoleParamsSchema = z.object({
-  id: z.coerce.number().int().min(0)
-})
-
-export function validateGetRole(req, res, next) {
-  const result = getRoleParamsSchema.safeParse(req.params)
-  if (!result.success) {
-    return res.status(400).json({ message: 'Invalid parameters', errors: result.error.errors })
-  }
-
-  req.params.id = result.data.id
-  return next()
-}
-
-export default { getUserParamsSchema, validateGetUser }

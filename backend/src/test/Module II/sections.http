@@ -1,0 +1,28 @@
+### ruta para obtener todas las secciones
+GET http://localhost:5200/api/sections/all
+
+### ruta para obtener una sección por su ID
+GET http://localhost:5200/api/sections/section/1
+
+### ruta para crear una nueva sección
+POST http://localhost:5200/api/sections/create
+Content-Type: application/json
+
+{
+    "grade_id": 2,
+    "academic_year_id": 1,
+    "section_name": "B",
+    "capacity": 30
+}
+
+### ruta para actualizar una sección por su ID
+PATCH http://localhost:5200/api/sections/update/31
+Content-Type: application/json
+
+{
+    "section_name": "C",
+    "capacity": 35
+}
+
+### ruta para eliminar una sección por su ID
+DELETE http://localhost:5200/api/sections/delete/31

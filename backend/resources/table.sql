@@ -31,12 +31,13 @@ CREATE TABLE users (
 );
 
 -- Tabla para Recuperación de Contraseñas
-CREATE TABLE password_resets (
+CREATE TABLE login_session (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    token VARCHAR(255) NOT NULL,
-    expires_at DATETIME NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    token VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 

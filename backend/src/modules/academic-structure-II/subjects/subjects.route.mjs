@@ -6,16 +6,15 @@ import { subjectModel } from "./subjects.model.mjs"
 const router = Router()
 const controller = new subjectController({subjectModel:subjectModel})
 
-// ruta para obtener todas las materias
+// Ruta para obtener todas las materias
 router.get("/all", controller.getAllSubjects)
-
-// ruta para crear una materia
+// Ruta para obtener una materia por su ID
+router.get("/subject/:subjectId", controller.getSubjectById)
+// Ruta para crear una materia
 router.post("/create", controller.createSubject)
-
-// ruta para actualizar una materia
-router.put("/update/:subject_id", controller.updateSubject)
-
-// ruta para eliminar una materia
-router.delete("/delete/:subject_id", controller.deleteSubject)
+// Ruta para actualizar una materia
+router.patch("/update/:subjectId", controller.updateSubject)
+// Ruta para eliminar una materia
+router.delete("/delete/:subjectId", controller.deleteSubject)
 
 export const subjectRoute = router

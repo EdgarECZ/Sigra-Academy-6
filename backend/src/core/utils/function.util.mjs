@@ -1,4 +1,6 @@
 import { db } from "../../../database/db.database.mjs";
+import { SETTINGS } from "../../../config/settings.config.mjs";
+import jwt from "jsonwebtoken";
 
 // Función para los seed para cargar los mocks dependiendo de la tabla
 export async function getSeedFunctionByTable(tableName, mock){
@@ -24,4 +26,16 @@ export function registerRoutes(app, routes) {
             });
         }
     });
+}
+
+// Función para asignar el token al usuario en sesión
+export async function assignTokenToSession(userId){
+    try{
+        const token = jwt.sign({userId}, SETTINGS.JWT_SECRET, {expiresIn: '2h'});
+        return token;
+    }
+    catch(error){
+        console.error('Error al asignar el token a la sesión:', error);
+        return null;
+    }
 }

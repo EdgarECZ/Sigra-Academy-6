@@ -1,0 +1,49 @@
+### Obtener todos los usuarios del sistema
+GET http://localhost:5200/api/auth/users
+
+### Obtener un usuario por su ID
+GET http://localhost:5200/api/auth/user/1
+
+### Obtener un usuario por su email
+GET http://localhost:5200/api/auth/email/jose.perez@example.com
+
+### Crear un nuevo usuario
+POST http://localhost:5200/api/auth/register
+Content-Type: application/json
+
+{
+    "role_id": 2,
+    "first_name": "Jose",
+    "last_name": "Santana",
+    "email": "jose.santana@example.com",
+    "phone": "04144204521",
+    "password_hash": "JSa06..."
+}
+
+### Borrar un usuario
+DELETE http://localhost:5200/api/auth/delete/8
+
+### Loguear un usuario
+POST http://localhost:5200/api/auth/login
+Content-Type: application/json
+
+{
+    "email": "jose.santana@example.com",
+    "password_hash": "JSa06..."
+}
+
+### Desloguear un usuario
+POST http://localhost:5200/api/auth/logout/9
+
+### Actualizar un usuario
+PATCH http://localhost:5200/api/auth/update/9
+Content-Type: application/json
+
+{
+    "first_name": "Juan",
+    "last_name": "Lopez",
+    "phone": "04141234567"
+}
+
+### Borrar un usuario
+DELETE http://localhost:5200/api/auth/delete/9

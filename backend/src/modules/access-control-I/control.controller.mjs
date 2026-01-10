@@ -1,120 +1,171 @@
-import { getUser as getUserModel, getUserByName as getUserByNameModel, getUserByEmail as getUserByEmailModel, getUserRoleById as getUserRoleByIdModel } from './control.model.mjs'
+import { is } from "zod/v4/locales";
+import { validateCreateUser, validateLoginUser, validateUpdateUser } from "./control.schema.mjs";
 
-export async function getUser(req, res) {
-	try {
-		const { id } = req.params
-		const userId = Number(id)
-		if (!userId || Number.isNaN(userId)) {
-			return res.status(400).json({ message: 'Invalid user id' })
+// Controlador para la gestión de usuarios y control de acceso
+export class ControlController {
+	constructor({ModelControl}){
+		this.model = ModelControl;
+	}
+
+	// Controlador para obtener todos los usuarios
+	getAllUsers = async (req, res) => {
+		try{
+			const result = await this.model.getAllUsers();
+			if(result.error) return res.status(404).json({error: result.error});
+			return res.status(200).json({
+				message: result.message,
+				users: result.users
+			});
 		}
-
-		const user = await getUserModel(userId)
-		if (!user) return res.status(404).json({ message: 'User not found' })
-
-		
-		const result = {
-			id: user.user_id,
-			role_id: user.role_id,
-			first_name: user.first_name,
-			last_name: user.last_name,
-			email: user.email,
-			phone: user.phone,
-			is_active: Boolean(user.is_active),
-			created_at: user.created_at,
-			updated_at: user.updated_at
+		catch(error){
+			return res.status(500).json({error: 'Error del servidor'});
 		}
+	}
 
-		return res.status(200).json(result)
-	} catch (error) {
-		console.error('getUser controller error:', error)
-		return res.status(500).json({ message: 'Internal server error' })
+	// Controlador para obtener un usuario por su ID
+	getUserById = async (req, res) => {
+		const { userId } = req.params;
+		try{
+			const result = await this.model.getUserById(userId);
+			if(result.error) return res.status(404).json({error: result.error});
+			return res.status(200).json({
+				message: result.message,
+				user: result.user
+			});
+		}
+		catch(error){
+			return res.status(500).json({error: 'Error del servidor'});
+		}
+	}
+
+	// Controlador para obtener un usuario por su email
+	getUserByEmail = async (req, res) => {
+		const { email } = req.params;
+		try{
+			const result = await this.model.getUserByEmail(email);
+			if(result.error) return res.status(404).json({error: result.error});
+			return res.status(200).json({
+				message: result.message,
+				user: result.user
+			});
+		}
+		catch(error){
+			return res.status(500).json({error: 'Error del servidor'});
+		}
+	}
+
+	// Controlador para crear un nuevo usuario
+	createdUser = async (req, res) => {
+		const validation = validateCreateUser(req.body);
+		try{
+			if(!validation.success){
+				return res.status(400).json({
+					error: 'Datos inválidos',
+					details: validation.error
+				});
+			}
+			const result = await this.model.createUser(validation.data);
+			if(result.error) return res.status(400).json({error: result.error});
+			return res.status(201).json({
+				message: result.message,
+				user: result.user
+			});
+		}
+		catch(error){
+			console.error(error)
+			return res.status(500).json({error: 'Error del servidor'});
+		}
+	}
+
+	// Controlador para loguear un usuario
+	LoginUser = async (req, res) => {
+		const validation = validateLoginUser(req.body);
+		try{
+			if(!validation.success){
+				return res.status(400).json({
+					error: 'Datos inválidos',
+					details: validation.error
+				});
+			}
+			const result = await this.model.loginUser(validation.data);
+			if(result.error) return res.status(400).json({error: result.error});
+			return res.status(200).json({
+				message: result.message,
+				user: result.user,
+				token: result.token
+			});
+		}
+		catch(error){
+			console.error(error)
+			return res.status(500).json({error: 'Error del servidor'});
+		}
+	}
+
+	// Controlador para actualizar un usuario
+	updateUser = async (req, res) => {
+		const { userId } = req.params;
+		const validation = validateUpdateUser(req.body);
+		try{
+			if(!validation.success){
+				return res.status(400).json({
+					error: 'Datos inválidos',
+					details: validation.error
+				});
+			}
+			const result = await this.model.updateUser(userId, validation.data);
+			if(result.error) return res.status(400).json({error: result.error});
+			return res.status(200).json({
+				message: result.message,
+				user: result.user
+			});
+		}
+		catch(error){
+			return res.status(500).json({error: 'Error del servidor'});
+		}
+	}
+
+	// Controlador para eliminar un usuario
+	deleteUser = async (req, res) => {
+		const { userId } = req.params;
+		try{
+			const result = await this.model.deleteUser(userId);
+			if(result.error) return res.status(400).json({error: result.error});
+			return res.status(200).json({
+				message: result.message
+			});
+		}
+		catch(error){
+			return res.status(500).json({error: 'Error del servidor'});
+		}
+	}
+
+	// Controlador para cerrar la sesión de un usuario
+	LogoutUser = async (req, res) => {
+		const { userId } = req.params;
+		try{
+			const result = await this.model.LogoutUser(userId);
+			if(result.error) return res.status(400).json({error: result.error});
+			return res.status(200).json({
+				message: result.message
+			});
+		}
+		catch(error){
+			return res.status(500).json({error: 'Error del servidor'});
+		}
+	}
+
+	// Controlador para la verificar si el usuario está autenticado
+	verifyAuth = async (req, res) => {
+		if(!req.user){
+			return res.status(401).json({
+				error: 'Usuario no autenticado',
+				isAuthenticated: false
+			});
+		}
+		return res.status(200).json({
+			message: 'Usuario autenticado',
+			isAuthenticated: true,
+			user: req.user
+		});
 	}
 }
-
-export async function getUserByName(req, res) {
-	try {
-		const { name } = req.params
-		if (!name || typeof name !== 'string' || name.trim() === '') {
-			return res.status(400).json({ message: 'Invalid name parameter' })
-		}
-
-		const user = await getUserByNameModel(name)
-		if (!user) return res.status(404).json({ message: 'User not found' })
-
-		const result = {
-			id: user.user_id,
-			role_id: user.role_id,
-			first_name: user.first_name,
-			last_name: user.last_name,
-			email: user.email,
-			phone: user.phone,
-			is_active: Boolean(user.is_active),
-			created_at: user.created_at,
-			updated_at: user.updated_at
-		}
-
-		return res.status(200).json(result)
-	} catch (error) {
-		console.error('getUserByName controller error:', error)
-		return res.status(500).json({ message: 'Internal server error' })
-	}
-}
-
-
-
-export async function getUserByEmail(req, res) {
-	try {
-		const { email } = req.params
-		if (!email || typeof email !== 'string' || email.trim() === '') {
-			return res.status(400).json({ message: 'Invalid email parameter' })
-		}
-
-		const user = await getUserByEmailModel(email)
-		if (!user) return res.status(404).json({ message: 'User not found' })
-
-		const result = {
-			id: user.user_id,
-			role_id: user.role_id,
-			first_name: user.first_name,
-			last_name: user.last_name,
-			email: user.email,
-			phone: user.phone,
-			password_hash: user.password_hash,
-			is_active: Boolean(user.is_active),
-			created_at: user.created_at,
-			updated_at: user.updated_at
-		}
-
-		return res.status(200).json(result)
-	} catch (error) {
-		console.error('getUserByEmail controller error:', error)
-		return res.status(500).json({ message: 'Internal server error' })
-	}
-}
-
-export async function getUserRole(req, res) {
-	try {
-		const { id } = req.params
-		const userId = Number(id)
-		if (Number.isNaN(userId)) {
-			return res.status(400).json({ message: 'Invalid user id' })
-		}
-
-		const user = await getUserRoleByIdModel(userId)
-		if (!user) return res.status(404).json({ message: 'User not found' })
-
-		const result = {
-			role_id: user.role_id,
-			first_name: user.first_name,
-			last_name: user.last_name
-		}
-
-		return res.status(200).json(result)
-	} catch (error) {
-		console.error('getUserRole controller error:', error)
-		return res.status(500).json({ message: 'Internal server error' })
-	}
-}
-
-export default { getUser, getUserByName, getUserByEmail, getUserRole }
-

@@ -1,0 +1,23 @@
+### Obtener todas las materias
+GET http://localhost:5200/api/prelacies/subjects
+
+### Obtener una materia por ID
+GET http://localhost:5200/api/prelacies/subjects/1
+
+### Ruta para obtener todas las prelaturas
+GET http://localhost:5200/api/prelacies/all
+
+### Crear una nueva prelatura
+POST http://localhost:5200/api/prelacies/create
+Content-Type: application/json
+
+{
+    "subject_id": 1,
+    "subject_prerequisites_id": 2
+}
+
+### Ruta para obtener todas las prelaturas de una materia específica
+GET http://localhost:5200/api/prelacies/subjects/1/prerequisites
+
+### Ruta para eliminar una prelatura por ID
+DELETE http://localhost:5200/api/prelacies/delete/1

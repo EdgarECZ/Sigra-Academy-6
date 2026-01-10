@@ -1,0 +1,23 @@
+### Obtener todos los grados académicos
+GET http://localhost:5200/api/grades/all
+
+### Crear un nuevo grado académico
+POST http://localhost:5200/api/grades/create
+Content-Type: application/json
+
+{
+    "grade_name": "Noveno Grado",
+    "level_order": 9
+}
+
+### Actualizar un grado académico
+PATCH http://localhost:5200/api/grades/update/1
+Content-Type: application/json
+
+{
+    "grade_name": "Noveno Grado Actualizado",
+    "level_order": 9
+}
+
+### Eliminar un grado académico
+DELETE http://localhost:5200/api/grades/delete/6

@@ -1,0 +1,28 @@
+### ruta para obtener todas las materias 
+GET http://localhost:5200/api/subjects/all
+
+### ruta para obtener una materia por su ID
+GET http://localhost:5200/api/subjects/subject/1
+
+### ruta para crear una nueva materia
+POST http://localhost:5200/api/subjects/create
+Content-Type: application/json
+
+{
+    "grade_id": 2,
+    "subject_name": "Matemáticas Avanzadas",
+    "code_subject": "MAT202",
+    "description": "Curso avanzado de matemáticas para estudiantes de segundo año."
+}
+
+### ruta para eliminar una materia por su ID
+DELETE http://localhost:5200/api/subjects/delete/56
+
+### ruta para actualizar una materia por su ID
+PATCH http://localhost:5200/api/subjects/update/57
+Content-Type: application/json
+
+{
+    "subject_name": "Matemáticas Intermedias",
+    "description": "Curso intermedio de matemáticas para estudiantes de primer año."
+}

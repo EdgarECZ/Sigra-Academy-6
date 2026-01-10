@@ -1,36 +1,30 @@
 import { Router } from "express";
+import { SETTINGS } from "../../../config/settings.config.mjs";
+import { controlRoute } from "../../modules/access-control-I/control.route.mjs";
 import { subjectRoute } from "../../modules/academic-structure-II/subjects/subjects.route.mjs";
-import prelaciesRoute from "../../modules/academic-structure-II/prelacies/prelacies.route.mjs";
-import academicStructureRoutes from "../../modules/academic-structure-II/structure.route.mjs";
-import { Router } from 'express';
-import { GradesLogRoutes } from '../../modules/grades-record-V/grades/grades.route.mjs';
-import { SETTINGS } from '../../../config/settings.config.mjs';
-import { RecordsRoutes } from '../../modules/grades-record-V/records/records.route.mjs'; 
-import {Router} from 'express';
-import { subjectRoute } from '../../modules/academic-structure-II/subjects/subjects.route.mjs';
+import { GradesLogRoutes } from "../../modules/grades-record-V/grades/grades.route.mjs";
+import { RecordsRoutes } from "../../modules/grades-record-V/records/records.route.mjs";
+import { prelaciesRoute } from "../../modules/academic-structure-II/prelacies/prelacies.route.mjs";
+import { SectionRoutes } from "../../modules/academic-structure-II/sections/section.route.mjs";
+import { GradeRoutes } from "../../modules/academic-structure-II/grades/grade.route.mjs";
+import { YearRoutes } from "../../modules/academic-structure-II/years/year.route.mjs";
 
 const router = Router();
 
-// Definir todas las rutas de los módulos aquí
-// Ruta para materias: /api/subject/subjects
-// Ruta para prelaciones: /api/subject/prelaciones
-// Ruta para estructura académica: /api/subject/academic-structure
-
-// Montar las rutas de materias
-router.use("/subjects", subjectRoute);
-
-// (module removed)
-
-// Montar las rutas de la estructura académica
-router.use("/academic-structure", academicStructureRoutes);
 
 export const ListRoutes = {
-	subject: router,
-};
+    auth: {
+        control: router.use(`${SETTINGS.BASE_PATH}/auth`, controlRoute)
+    },
+    academicStructure: {
+        subjects: router.use(`${SETTINGS.BASE_PATH}/subjects`, subjectRoute),
+        prelacies: router.use(`${SETTINGS.BASE_PATH}/prelacies`, prelaciesRoute),
+        sections: router.use(`${SETTINGS.BASE_PATH}/sections`, SectionRoutes),
+        gradeAcademic: router.use(`${SETTINGS.BASE_PATH}/grades`, GradeRoutes),
+        years: router.use(`${SETTINGS.BASE_PATH}/years`, YearRoutes)
+    },
     grades: {
         grades: router.use(`${SETTINGS.BASE_PATH}/grades-log`, GradesLogRoutes),
         records: router.use(`${SETTINGS.BASE_PATH}/records`, RecordsRoutes)
-    }
-    subject: router.use("/subjects",subjectRoute)
-    
+    }  
 }

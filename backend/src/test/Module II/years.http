@@ -1,0 +1,28 @@
+### Obtener todos los años academicos
+GET http://localhost:5200/api/years/all
+
+### Obtener un año academico por su ID
+GET http://localhost:5200/api/years/year/1
+
+### Crear un nuevo año academico
+POST http://localhost:5200/api/years/create
+Content-Type: application/json
+
+{
+    "name": "Año Escolar 2024-2025",
+    "start_date": "2024-09-01",
+    "end_date": "2025-06-30"
+}
+
+### Actualizar un año academico
+PATCH http://localhost:5200/api/years/update/5
+Content-Type: application/json
+
+{
+    "name": "Año Escolar 2024-2025 Actualizado",
+    "start_date": "2024-09-15",
+    "end_date": "2025-07-15"
+}
+
+### Borrar un año academico
+DELETE http://localhost:5200/api/years/delete/5

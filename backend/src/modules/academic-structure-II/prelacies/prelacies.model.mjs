@@ -1,142 +1,135 @@
 import { db } from '../../../../database/db.database.mjs';
 
-export const getAllSubjects = async (excludeFifth = true) => {
-	const maxLevel = excludeFifth ? 4 : 999;
-	const sql = `SELECT s.subject_id, s.code_subject as code, s.subject_name as name, g.grade_id, g.grade_name, g.level_order
-							 FROM subjects s
-							 JOIN grades g ON s.grade_id = g.grade_id
-							 WHERE g.level_order <= ? AND s.is_active = 1
-							 ORDER BY g.level_order, s.subject_name`;
-	const [rows] = await db.execute(sql, [maxLevel]);
-	return rows;
-}
-
-export const getSubjectById = async (id) => {
-	const sql = `SELECT s.subject_id, s.code_subject as code, s.subject_name as name, g.grade_id, g.grade_name, g.level_order
-							 FROM subjects s
-							 JOIN grades g ON s.grade_id = g.grade_id
-							 WHERE s.subject_id = ? LIMIT 1`;
-	const [rows] = await db.execute(sql, [id]);
-	return rows[0];
-}
-
-export const searchSubjects = async (q) => {
-	const like = `%${q}%`;
-	const sql = `SELECT s.subject_id, s.code_subject as code, s.subject_name as name, g.grade_id, g.grade_name, g.level_order
-							 FROM subjects s
-							 JOIN grades g ON s.grade_id = g.grade_id
-							 WHERE (s.code_subject LIKE ? OR s.subject_name LIKE ?) AND s.is_active = 1
-							 ORDER BY g.level_order, s.subject_name`;
-	const [rows] = await db.execute(sql, [like, like]);
-	return rows;
-}
-
-export const getPrerequisitesForSubject = async (subjectId) => {
-	const sql = `SELECT sp.id, sp.subject_id, sp.subject_prerequisites_id, s2.code_subject as code, s2.subject_name as name, g.grade_name, g.level_order
-							 FROM subject_prerequisites sp
-							 JOIN subjects s2 ON sp.subject_prerequisites_id = s2.subject_id
-							 JOIN grades g ON s2.grade_id = g.grade_id
-							 WHERE sp.subject_id = ?`;
-	const [rows] = await db.execute(sql, [subjectId]);
-	return rows;
-}
-
-export const getPossiblePrerequisites = async (subjectId) => {
-	// Return subjects with level_order < subject.level_order and up to 4th year
-	const subject = await getSubjectById(subjectId);
-	if (!subject) return [];
-	const maxLevel = 4;
-	const sql = `SELECT s.subject_id, s.code_subject as code, s.subject_name as name, g.grade_id, g.grade_name, g.level_order
-							 FROM subjects s
-							 JOIN grades g ON s.grade_id = g.grade_id
-							 WHERE g.level_order < ? AND g.level_order <= ? AND s.is_active = 1
-							 ORDER BY g.level_order, s.subject_name`;
-	const [rows] = await db.execute(sql, [subject.level_order, maxLevel]);
-	return rows;
-}
-
-export const createPrerequisite = async (subjectId, prerequisiteId) => {
-	// Allow prerequisiteId === null to indicate "no prerequisites".
-	// Avoid self-reference when prerequisiteId provided
-	if (prerequisiteId !== null && Number(subjectId) === Number(prerequisiteId)) throw new Error('A subject cannot be prerequisite of itself');
-
-	// Get subject record
-	const subject = await getSubjectById(subjectId);
-	if (!subject) throw new Error('Subject not found');
-
-	// If prerequisiteId is null, only allow when subject is 1st year (level_order === 1)
-	if (prerequisiteId === null) {
-		if (!subject.level_order || Number(subject.level_order) !== 1) throw new Error('Only 1st year subjects can be saved without prerequisites');
-		// Insert placeholder row with NULL prerequisite
-		const [result] = await db.execute(
-			`INSERT INTO subject_prerequisites (subject_id, subject_prerequisites_id) VALUES (?, NULL)`,
-			[subjectId]
+// Modelo que interactua con la tabla subject_prerequisites de la base de datos
+export class ModelPrelacy{
+	// Método para obtener todas las materias
+	static async getAllSubjects(){
+		const [subjects] = await db.query(
+			`SELECT s.*, g.grade_name, g.level_order
+			FROM subjects s JOIN grades g ON s.grade_id = g.grade_id WHERE s.is_active = 1 
+			ORDER BY g.level_order, s.subject_name`
 		);
-		return { insertId: result.insertId };
+		if(subjects.length === 0) return {error: 'No hay materias registradas'};
+		return {
+			message: 'Materias obtenidas correctamente',
+			subjects: subjects
+		}
 	}
 
-	// If prerequisiteId provided, validate it
-	const prereq = await getSubjectById(prerequisiteId);
-	if (!prereq) throw new Error('Prerequisite subject not found');
-	if (prereq.level_order >= subject.level_order) throw new Error('Prerequisite must be from a lower year than the subject');
+	// Método para obtener una materia por su ID
+	static async getSubjectById(subjectId){
+		if(!subjectId) return {error: 'El ID de la materia es requerido'};
+		const [subject] = await db.query(
+			`SELECT s.*, g.grade_name, g.level_order FROM subjects s JOIN grades g ON s.grade_id = g.grade_id 
+			WHERE s.subject_id = ? LIMIT 1`, [subjectId]
+		);
+		// Verificar si se encontró la materia
+		if(subject.length === 0) return {error: 'Materia no encontrada'};
+		return {
+			message: 'Materia obtenida correctamente',
+			subject: subject[0]
+		}
+	}
 
-	// Check duplicates
-	const [exists] = await db.execute(
-		`SELECT id FROM subject_prerequisites WHERE subject_id = ? AND subject_prerequisites_id = ? LIMIT 1`,
-		[subjectId, prerequisiteId]
-	);
-	if (exists.length) throw new Error('Prerequisite already exists');
+	// Método para obtener todos las prelaturas
+	static async getAllPrelacies(){
+		const [prelacies] = await db.query(
+			`SELECT sp.*, s1.code_subject, s1.subject_name, 
+			s2.code_subject AS prerequisite_code, s2.subject_name AS prerequisite_name
+			FROM subject_prerequisites sp
+			JOIN subjects s1 ON sp.subject_id = s1.subject_id
+			JOIN subjects s2 ON sp.subject_prerequisites_id = s2.subject_id
+			ORDER BY s1.subject_name`
+		);
+		if(prelacies.length === 0) return {error: 'No hay prelaturas registradas'};
+		return {
+			message: 'Prelaturas obtenidas correctamente',
+			prelacies: prelacies
+		}
+	}
 
-	const [result] = await db.execute(
-		`INSERT INTO subject_prerequisites (subject_id, subject_prerequisites_id) VALUES (?,?)`,
-		[subjectId, prerequisiteId]
-	);
-	return { insertId: result.insertId };
-}
+	// Método para obtener las prelaturas de una materia en especifico
+	static async getPrelaciesBySubjectId(subjectId){
+		if(!subjectId) return {error: 'El ID de la materia es requerido'};
+		// Se verifica si existe la materia
+		const [existingSubject] = await db.query(
+			`SELECT * FROM subjects WHERE subject_id = ?`,
+			[subjectId]
+		);
+		if(existingSubject.length === 0) return {error: 'Materia no encontrada'};
+		// Si existe, se obtienen sus prelaturas
+		const [prelacies] = await db.query(
+			`SELECT sp.subject_id, sp.subject_prerequisites_id, s.code_subject,
+			s.subject_name, g.grade_name, g.level_order FROM subject_prerequisites sp
+			JOIN subjects s ON sp.subject_prerequisites_id = s.subject_id
+			JOIN grades g ON s.grade_id = g.grade_id
+			WHERE sp.subject_id = ? ORDER BY g.level_order, s.subject_name`,
+			[subjectId]
+		);
+		if(prelacies.length === 0) return {error: 'No hay prelaturas registradas para esta materia'};
+		return {
+			message: 'Prelaturas obtenidas correctamente',
+			prelacies: prelacies
+		}
+	}
 
-export const deletePrerequisite = async (id) => {
-	const [result] = await db.execute(`DELETE FROM subject_prerequisites WHERE id = ?`, [id]);
-	return result.affectedRows > 0;
-}
+	// Método para crear una prelatura
+	static async createPrelacy(data){
+		if(!data) return {error: 'El ID de la materia y el ID de la prelatura son requeridos'};
+		const { subject_id, subject_prerequisites_id } = data;
+		// Se verifica si existe la materia y si existe la prelatura
+		const [exisitingSubject] = await db.query(
+			`SELECT * FROM subjects WHERE subject_id = ?`,
+			[subject_id]
+		);
+		const [exisitingPrerequisite] = await db.query(
+			`SELECT * FROM subject_prerequisites WHERE subject_prerequisites_id = ? 
+			AND subject_id = ?`,
+			[subject_prerequisites_id, subject_id]
+		);
+		if(exisitingSubject.length === 0 || exisitingPrerequisite.length > 0){
+			return {error: 'Materia no encontrada o prelatura ya existe para esta materia'};
+		}
+		// Si no existe, se crea la prelatura
+		const [newPrelacy] = await db.query(
+			`INSERT INTO subject_prerequisites (subject_id, subject_prerequisites_id)
+			VALUES (?, ?)`,
+			[subject_id, subject_prerequisites_id]
+		);
+		// Se obtiene la prelatura creada
+		const [createdPrelacy] = await db.query(
+			`SELECT sp.*, s1.code_subject, s1.subject_name, s2.code_subject AS prerequisite_code, s2.subject_name AS prerequisite_name
+			FROM subject_prerequisites sp
+			JOIN subjects s1 ON sp.subject_id = s1.subject_id
+			JOIN subjects s2 ON sp.subject_prerequisites_id = s2.subject_id
+			WHERE sp.id = ? LIMIT 1`,
+			[newPrelacy.insertId]
+		);
+		if(createdPrelacy.length === 0) return {error: 'Error al crear la prelatura'};
+		return {
+			message: 'Prelatura creada correctamente',
+			prelacy: createdPrelacy[0]
+		}
+	}
 
-export const deletePrerequisitesBySubject = async (subjectId) => {
-	const [result] = await db.execute(`DELETE FROM subject_prerequisites WHERE subject_id = ?`, [subjectId]);
-	return result.affectedRows;
-}
-
-export const getAllPrerequisitesRows = async () => {
-	// Use LEFT JOIN for prereq subject so rows with NULL subject_prerequisites_id are included
-	const sql = `SELECT sp.id, sp.subject_id, sp.subject_prerequisites_id, sp.created_at,
-											s.code_subject as subject_code, s.subject_name as subject_name,
-											p.code_subject as prereq_code, p.subject_name as prereq_name
-							 FROM subject_prerequisites sp
-							 JOIN subjects s ON sp.subject_id = s.subject_id
-							 LEFT JOIN subjects p ON sp.subject_prerequisites_id = p.subject_id
-							 ORDER BY sp.created_at DESC`;
-	const [rows] = await db.execute(sql);
-	return rows;
-}
-
-export const getPrereqSummary = async () => {
-	// Return subjects that have at least one row in subject_prerequisites (including NULL prereq)
-	const sql = `SELECT s.subject_id, s.code_subject as subject_code, s.subject_name as subject_name,
-											GROUP_CONCAT(CONCAT(p.code_subject, '::', p.subject_name) SEPARATOR '||') as prereqs,
-											COUNT(sp.id) as prereq_count
-							 FROM subjects s
-							 LEFT JOIN subject_prerequisites sp ON s.subject_id = sp.subject_id
-							 LEFT JOIN subjects p ON sp.subject_prerequisites_id = p.subject_id
-							 GROUP BY s.subject_id
-							 HAVING prereq_count > 0`;
-	const [rows] = await db.execute(sql);
-	// convert prereqs string to array; if prereqs is null but prereq_count>0 it means there are placeholder NULL prereqs
-	return rows.map(r => ({
-		subject_id: r.subject_id,
-		subject_code: r.subject_code,
-		subject_name: r.subject_name,
-		prereqs: r.prereqs ? r.prereqs.split('||').map(x => {
-			const [code, name] = x.split('::'); return { code, name };
-		}) : [],
-		hasNoPrereqs: (!r.prereqs || r.prereqs === '') && Number(r.prereq_count) > 0
-	}));
+	// Método para eliminar una prelatura
+	static async deletePrelacy(prelacyId){
+		if(!prelacyId) return {error: 'El ID de la prelatura es requerido'};
+		// Se verifica si existe la prelatura
+		const [existingPrelacy] = await db.query(
+			`SELECT * FROM subject_prerequisites WHERE id = ?`,
+			[prelacyId]
+		);
+		if(existingPrelacy.length === 0) return {error: 'Prelatura no encontrada'};
+		// Si existe, se elimina la prelatura
+		const [deletedPrelacy] = await db.query(
+			`DELETE FROM subject_prerequisites WHERE id = ?`,
+			[prelacyId]
+		);
+		if(deletedPrelacy.affectedRows === 0) return {error: 'Error al eliminar la prelatura'};
+		return {
+			message: 'Prelatura eliminada correctamente'
+		}
+	}
 }
 
