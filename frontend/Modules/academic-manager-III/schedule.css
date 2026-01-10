@@ -163,6 +163,10 @@ body {
     min-height: 80px;
 }
 
+.class-cell.spanned-cell {
+    border: none;
+}
+
 .class-cell:last-child {
     border-right: none;
 }

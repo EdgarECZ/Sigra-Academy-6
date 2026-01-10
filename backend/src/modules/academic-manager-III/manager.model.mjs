@@ -59,6 +59,85 @@ export const getCourseById = async (assignmentId) => {
     }
 }
 
+export const getScheduleByStudentId = async (studentId) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT sch.schedule_id,
+              sch.day_of_week,
+              sch.start_time,
+              sch.end_time,
+              sch.classroom,
+              ta.assignment_id,
+              s.subject_name,
+              sec.section_name,
+              g.grade_name,
+              ay.name AS academic_year,
+              CONCAT(u.first_name, ' ', u.last_name) AS teacher_name
+        FROM enrollments e
+        JOIN sections sec ON e.section_id = sec.section_id
+        JOIN grades g ON sec.grade_id = g.grade_id
+        JOIN academic_years ay ON sec.academic_year_id = ay.year_id
+        JOIN teacher_assignments ta ON ta.section_id = sec.section_id
+        JOIN subjects s ON ta.subject_id = s.subject_id
+        JOIN schedules sch ON sch.assignment_id = ta.assignment_id
+        JOIN users u ON ta.teacher_user_id = u.user_id
+        WHERE e.student_user_id = ?
+        ORDER BY FIELD(sch.day_of_week,'Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'),
+                sch.start_time`,
+      [studentId]
+    )
+    return rows
+  } catch (error) {
+    throw new Error(`Error fetching schedule: ${error.message}`)
+  }
+}
+
+export const getActivitiesByAssignmentId = async (assignmentId) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT activity_id, title, description, weight_percentage, due_date, is_visible
+       FROM activities
+       WHERE assignment_id = ? AND is_active = 1
+       ORDER BY due_date DESC`,
+      [assignmentId]
+    );
+    return rows;
+  } catch (error) {
+    throw new Error(`Error fetching activities: ${error.message}`);
+  }
+};
+
+export const getPeopleByAssignmentId = async (assignmentId) => {
+  try {
+    // Obtener la sección y el profesor de la asignación
+    const [assignment] = await db.query(
+      `SELECT ta.section_id, u.user_id, CONCAT(u.first_name, ' ', u.last_name) as name, 'teacher' as role
+       FROM teacher_assignments ta
+       JOIN users u ON ta.teacher_user_id = u.user_id
+       WHERE ta.assignment_id = ?`,
+      [assignmentId]
+    );
+
+    if (!assignment.length) return null;
+
+    // Obtener estudiantes de esa sección
+    const [students] = await db.query(
+      `SELECT u.user_id, CONCAT(u.first_name, ' ', u.last_name) as name, 'student' as role
+       FROM enrollments e
+       JOIN users u ON e.student_user_id = u.user_id
+       WHERE e.section_id = ?`,
+      [assignment[0].section_id]
+    );
+
+    return {
+      teacher: assignment[0],
+      students: students
+    };
+  } catch (error) {
+    throw new Error(`Error fetching people: ${error.message}`);
+  }
+};
+
 // Crear un nuevo curso
 export const createCourse = async (courseData) => {
     const { teacher_user_id, subject_id, section_id } = courseData
