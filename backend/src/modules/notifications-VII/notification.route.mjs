@@ -6,19 +6,19 @@ const router = Router();
 const notificationController = new NotificationController({NotificationModel: NotificationModel});
 
 // Rutas relacionadas con las notificaciones 
-//Rutas para obtener todas las notificaciones del sistema
+// Rutas para obtener todas las notificaciones del sistema
 router.get('/all', notificationController.getAllNotifications);
-
-//################################################################
-// NUEVA RUTA: Obtener todas las de UN USUARIO por el ID
+// Ruta para obtener todas las notificaciones de un usuario específico
 router.get('/user/:userId', notificationController.getNotificationsByUserId);
-// NUEVA RUTA: Obtener una específica
-router.get('/notification/:id', notificationController.getNotificationById);
-// NUEVA RUTA: Crear una notificación
+// Ruta para obtener una notificación por su ID
+router.get('/notification/:notificationId', notificationController.getNotificationById);
+// Ruta para crear una nueva notificación
 router.post('/create', notificationController.createNotification);
-// NUEVA RUTA: Actualizar (usa :id como parámetro dinámico)
-router.patch('/update/:id', notificationController.updateNotification); 
+// Ruta para actualizar una notificación
+router.patch('/update/:notificationId', notificationController.updateNotification);
+// Ruta para marcar una notificación como leída
+router.patch('/mark-as-read/:notificationId', notificationController.markNotificationAsRead);
 // NUEVA RUTA: Eliminar notificación
-router.delete('/delete/:id', notificationController.deleteNotification);
+router.delete('/delete/:notificationId', notificationController.deleteNotification);
 
 export const NotificationRoutes = router;

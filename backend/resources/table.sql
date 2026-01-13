@@ -213,7 +213,7 @@ CREATE TABLE notifications (
     user_id INT NOT NULL, -- Destinatario
     title VARCHAR(100) NOT NULL,
     message TEXT NOT NULL,
-    type ENUM('Alerta', 'Info', 'Academico') DEFAULT 'Info',
+    type ENUM('Alerta', 'Info', 'Academico', 'Recordatorio') DEFAULT 'Info',
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)

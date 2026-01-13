@@ -1,4 +1,4 @@
-import { validateCreateSchedule, validateUpdateSchedule } from "./schedules.schema.mjs";
+import { validateSchedule, validateUpdateSchedule } from "./schedules.schema.mjs";
 
 // Controlador que maneja las solicitudes relacionadas con los horarios académicos
 export class SchedulesController {
@@ -42,7 +42,7 @@ export class SchedulesController {
 
     // Crear un nuevo horario
     createSchedule = async (req, res) => {
-        const validation = validateCreateSchedule(req.body);
+        const validation = validateSchedule(req.body);
         try{
             if(!validation.success){
                 return res.status(400).json({

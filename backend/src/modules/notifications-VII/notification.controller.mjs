@@ -1,8 +1,10 @@
+import { validateCreateNotification, validateUpdateNotification } from "./notification.schema.mjs";
 export class NotificationController {
     constructor ({NotificationModel}){
         this.NotificationModel = NotificationModel;
     }
-    // Metodo para obtener todas las notificaciones del sistema
+    
+    // Controlador para obtener todas las notificaciones del sistema
     getAllNotifications = async (req, res) => {
         try {
             const result = await this.NotificationModel.getAllNotifications();
@@ -16,93 +18,111 @@ export class NotificationController {
         }
     }
 
-    // ################################################################
-
-    createNotification = async (req, res) => {
-        const { user_id, message, type } = req.body;
-
-        if (!user_id || !message) {
-            return res.status(400).json({ error: 'Faltan campos obligatorios ID del usuario y el mensaje' });
-        }
-
-        try {
-            const result = await this.NotificationModel.createNotification({ user_id, message, type });
-            
-            // Si el modelo devuelve un error, usamos el código de estado que nos envió
-            if (result.error) {
-                return res.status(result.code || 400).json({ error: result.error });
-            }
-            
-            return res.status(201).json(result);
-        } catch (error) {
-            return res.status(500).json({ error: error.message });
-        }
-    }
-    //que haga la validacion 
-    
-    // NUEVO MÉTODO: Manejar la actualización
-    updateNotification = async (req, res) => {
-        const { id } = req.params; // El ID viene de la URL: /notifications/update/1
-        const { user_id, message, type } = req.body;
-
-        try {
-            const result = await this.NotificationModel.updateNotification(id, { user_id, message, type });
-            
-            if (result.error) {
-                return res.status(result.code || 400).json({ error: result.error });
-            }
-            
-            return res.status(200).json(result);
-        } catch (error) {
-            return res.status(500).json({ error: error.message });
-        }
-    }
-    // NUEVO MÉTODO: Manejar la eliminación
-    deleteNotification = async (req, res) => {
-        const { id } = req.params; // Extraemos el ID de la URL
-
-        try {
-            const result = await this.NotificationModel.deleteNotification(id);
-            
-            if (result.error) {
-                return res.status(result.code || 400).json({ error: result.error });
-            }
-            
-            return res.status(200).json(result);
-        } catch (error) {
-            return res.status(500).json({ error: error.message });
-        }
-    }
-    // NUEVO MÉTODO: Manejar la búsqueda por ID
+    // Controlador para obtener una notificación por su ID
     getNotificationById = async (req, res) => {
-        const { id } = req.params;
-
+        const { notificationId } = req.params;
         try {
-            const result = await this.NotificationModel.getNotificationById(id);
-            
-            if (result.error) {
-                return res.status(result.code || 400).json({ error: result.error });
-            }
-            
-            return res.status(200).json(result);
-        } catch (error) {
-            return res.status(500).json({ error: error.message });
+            const result = await this.NotificationModel.getNotificationById(notificationId);
+            if (result.error) return res.status(404).json({error: result.error});
+            return res.status(200).json({
+                message: result.message,
+                notification: result.notification
+            });
+        }
+        catch(error){
+            console.error(error);
+            return res.status(500).json({error: 'Error interno del servidor.'});
         }
     }
-    // NUEVO MÉTODO: Manejar la búsqueda por ID de usuario
+    
+    // Controlador para obtener todas las notificaciones de un usuario específico
     getNotificationsByUserId = async (req, res) => {
-        const { userId } = req.params; // Captura el ID del usuario de la URL
-
-        try {
+        const { userId } = req.params;
+        try{
             const result = await this.NotificationModel.getNotificationsByUserId(userId);
-            
-            if (result.error) {
-                return res.status(result.code || 400).json({ error: result.error });
+            if(result.error) return res.status(404).json({ error: result.error });
+            return res.status(200).json({
+                message: result.message,
+                notifications: result.notifications
+            });
+        }
+        catch(error){
+            return res.status(500).json({ error: 'Error interno del servidor.' });
+        }
+    }
+
+    // Controlador para marcar una notificación como leída
+    markNotificationAsRead = async (req, res) => {
+        const { notificationId } = req.params;
+        try {
+            const result = await this.NotificationModel.markNotificationAsRead(notificationId);
+            if (result.error) return res.status(404).json({ error: result.error });
+            return res.status(200).json({
+                message: result.message
+            });
+        }
+        catch (error) {
+            return res.status(500).json({ error: 'Error interno del servidor.' });
+        }
+    }
+
+    // Controlador para crear una nueva notificación
+    createNotification = async (req, res) => {
+        const validation = validateCreateNotification(req.body);
+        try{
+            if(!validation.success) {
+                return res.status(400).json({
+                    error: 'Datos de notificación inválidos.',
+                    details: validation.error
+                })
             }
-            
-            return res.status(200).json(result);
-        } catch (error) {
-            return res.status(500).json({ error: error.message });
+            const result = await this.NotificationModel.createNotification(validation.data);
+            if(result.error) return res.status(404).json({ error: result.error });
+            return res.status(201).json({
+                message: result.message,
+                notification: result.notification
+            });
+        }
+        catch(error){
+            return res.status(500).json({ error: 'Error interno del servidor.' });
+        }
+    }
+    
+    
+    // Controlador para actualizar una notificación
+    updateNotification = async (req, res) => {
+        const {notificationId} = req.params;
+        const validation = validateUpdateNotification(req.body);
+        try{
+            if(!validation.success) {
+                return res.status(400).json({
+                    error: 'Datos de notificación inválidos.',
+                    details: validation.error
+                });
+            }
+            const result = await this.NotificationModel.updateNotification(notificationId, validation.data);
+            if(result.error) return res.status(404).json({ error: result.error });
+            return res.status(200).json({
+                message: result.message,
+                notification: result.notification
+            });
+        }
+        catch(error){
+            return res.status(500).json({ error: 'Error interno del servidor.' });
+        }
+    }
+    // Controlador para eliminar una notificación
+    deleteNotification = async (req, res) => {
+        const {notificationId} = req.params;
+        try{
+            const result = await this.NotificationModel.deleteNotification(notificationId);
+            if(result.error) return res.status(404).json({ error: result.error });
+            return res.status(200).json({
+                message: result.message
+            });
+        }
+        catch(error){
+            return res.status(500).json({ error: 'Error interno del servidor.' });
         }
     }
 }

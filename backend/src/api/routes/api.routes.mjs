@@ -32,8 +32,7 @@ export const ListRoutes = {
     },
     notifications: {
         notifications: router.use(`${SETTINGS.BASE_PATH}/notifications`, NotificationRoutes)
-    }
-}
+    },
     academicManager: {
         assignments: router.use(`${SETTINGS.BASE_PATH}/assignments`, AssignmentRouter),
         schedules: router.use(`${SETTINGS.BASE_PATH}/schedules`, SchedulesRoutes)
