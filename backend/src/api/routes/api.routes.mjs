@@ -11,6 +11,9 @@ import { YearRoutes } from "../../modules/academic-structure-II/years/year.route
 import { NotificationRoutes } from "../../modules/notifications-VII/notification.route.mjs";
 import { AssignmentRouter } from "../../modules/academic-manager-III/assignments/assignment.route.mjs";
 import { SchedulesRoutes } from "../../modules/academic-manager-III/schedules/schedules.route.mjs";
+import { ActivitiesRoute } from "../../modules/teaching-manager-IV/activities/activities.route.mjs";
+import { SubmissionRoute } from "../../modules/teaching-manager-IV/submissions/submission.route.mjs";
+import { ResourceRoute } from "../../modules/teaching-manager-IV/courseResources/resources.route.mjs";
 
 const router = Router();
 
@@ -36,5 +39,10 @@ export const ListRoutes = {
     academicManager: {
         assignments: router.use(`${SETTINGS.BASE_PATH}/assignments`, AssignmentRouter),
         schedules: router.use(`${SETTINGS.BASE_PATH}/schedules`, SchedulesRoutes)
-    }  
+    },
+    activities: {
+        activity: router.use(`${SETTINGS.BASE_PATH}/activities`, ActivitiesRoute),
+        submissions: router.use(`${SETTINGS.BASE_PATH}/submissions`, SubmissionRoute),
+        resources: router.use(`${SETTINGS.BASE_PATH}/resources`, ResourceRoute)
+    }
 }
