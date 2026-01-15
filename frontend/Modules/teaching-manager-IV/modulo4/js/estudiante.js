@@ -7,8 +7,37 @@ function showSection(sectionId) {
         link.classList.remove('active');
         if(link.getAttribute('onclick').includes(sectionId)) link.classList.add('active');
     });
+    // If navigating to asistencia, refresh the attendance panel
+    try{ if(sectionId === 'asistencia' && typeof renderAsistencia === 'function') renderAsistencia(); }catch(e){ /* ignore */ }
 }
 
+    // Normalize server date strings like 'YYYY-MM-DD HH:mm:ss' to a reliably parseable Date
+    function parseServerDate(s){
+        if(!s) return null;
+        if(typeof s === 'string'){
+            if(s.includes(' ') && !s.includes('T')) s = s.replace(' ', 'T');
+            return new Date(s);
+        }
+        return new Date(s);
+    }
+
+// Exponer funciones usadas por atributos onclick (si el script se carga como module los onclick pierden scope)
+Object.assign(window, {
+    showSection,
+    subirTarea,
+    eliminarMiEntrega,
+    markPresentStudent,
+    renderTareasPendientes,
+    renderAsistencia,
+    renderReportes,
+    renderCalendarioVisual,
+    renderRecentActivities,
+    startPollingStudentUpdates,
+    hideDeliveredTask,
+    openActivityFromCalendar,
+    openAttendanceFromCalendar,
+    openCoursePanel
+});
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Mostrar nombre del usuario desde `currentUserEstudiante` en la cabecera
@@ -188,8 +217,8 @@ async function renderCalendarioVisual() {
         const sesionesDia = attendanceRecords.filter(s => {
             // si open_date está presente, checar rango (incluir días entre open y close)
             if(s.open_date && s.close_date){
-                const open = new Date(s.open_date);
-                const close = new Date(s.close_date);
+                const open = parseServerDate(s.open_date);
+                const close = parseServerDate(s.close_date);
                 return dateObj >= new Date(open.getFullYear(), open.getMonth(), open.getDate()) && dateObj <= new Date(close.getFullYear(), close.getMonth(), close.getDate());
             }
             // fallback: si no hay open/close intentar comparar con marked_at (no ideal)
@@ -197,8 +226,8 @@ async function renderCalendarioVisual() {
         });
 
         sesionesDia.forEach(s => {
-            const open = s.open_date ? new Date(s.open_date) : null;
-            const close = s.close_date ? new Date(s.close_date) : null;
+            const open = s.open_date ? parseServerDate(s.open_date) : null;
+            const close = s.close_date ? parseServerDate(s.close_date) : null;
             const now = new Date();
             const isActive = open && close && now >= open && now <= close && s.status !== 'present';
             const label = `🎯 Asistencia Semana ${s.week_number || ''}`;
@@ -256,7 +285,11 @@ async function renderRecentActivities(){
             const sub = subsMap[a.activity_id];
             const status = sub ? `<span class="status-badge status-graded">Entregada</span>` : `<span class="status-badge status-pending">Pendiente</span>`;
             const due = a.due_date ? new Date(a.due_date).toLocaleString() : 'Sin fecha';
-            const submittedLink = sub ? `<div style="font-size:0.9rem; margin-top:6px;"><a href="${sub.file_path}" target="_blank">Ver entrega</a> — ${sub.is_late ? '<span style="color:#C52B3D; font-weight:bold;">Tardía</span>' : 'A tiempo'}</div>` : '';
+            let submittedLink = '';
+            if(sub){
+                const lateNote = sub.is_late ? '<span style="color:#C52B3D; font-weight:bold;">Tardía</span>' : 'A tiempo';
+                submittedLink = '<div style="font-size:0.9rem; margin-top:6px;"><a href="' + (sub.file_path || '#') + '" target="_blank">Ver entrega</a> — ' + lateNote + '</div>';
+            }
             return `<div style="padding:8px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;"><div><strong>${a.title}</strong> <div style="font-size:0.9rem; color:#666;">${a.subject_name || ''} — Vence: ${due}</div>${status}${submittedLink}</div><div><button class="btn tiny" onclick="openActivityFromCalendar(${a.activity_id})">Ir a tarea</button></div></div>`;
         }).join('');
         container.innerHTML = html;
@@ -296,71 +329,110 @@ async function renderCursos() {
 
 // 3. Tareas Pendientes y Subida (desde backend)
 async function renderTareasPendientes() {
-    const container = document.getElementById('lista-tareas-pendientes');
+    const containerPending = document.getElementById('lista-tareas-pendientes');
+    const containerDelivered = document.getElementById('lista-tareas-entregadas');
 
-    container.innerHTML = '';
+    containerPending.innerHTML = '';
+    containerDelivered.innerHTML = '';
     try{
-        // Primero obtener las asignaciones a las que pertenece el estudiante
+        // Obtener asignaciones y actividades
         const asgData = await apiFetch(`/assignments/student/${currentUserEstudiante.id}/assignments`);
         const assignments = asgData.assignments || [];
-        if(assignments.length === 0){ container.innerHTML = '<div class="card"><p>Sin Tareas Pendientes</p></div>'; return; }
+        if(assignments.length === 0){ containerPending.innerHTML = '<div class="card"><p>Sin Tareas</p></div>'; return; }
 
         const activities = [];
-        // Obtener entregas existentes del estudiante para enlazarlas con actividades
+        // Entregas existentes del estudiante
         const mySubsData = await apiFetch(`/assignments/student/${currentUserEstudiante.id}/submissions`);
         const mySubs = (mySubsData.submissions || []).reduce((acc, s) => { acc[s.activity_id] = s; return acc; }, {});
 
-        // Para cada asignación, traer actividades
         for(const a of assignments){
             const actData = await apiFetch(`/assignments/assignment/${a.assignment_id}/activities`);
             const acts = actData.activities || [];
             acts.forEach(act => activities.push({ ...act, subject_name: a.subject_name, assignment_id: a.assignment_id }));
         }
 
-        if(activities.length === 0){ container.innerHTML = '<div class="card"><p>Sin Tareas Pendientes</p></div>'; return; }
+        if(activities.length === 0){ containerPending.innerHTML = '<div class="card"><p>Sin Tareas</p></div>'; return; }
 
-        container.innerHTML = activities.map(a => {
-            const existing = mySubs[a.activity_id];
-            const submittedInfo = existing ? `<div style="margin-top:8px; font-size:0.9rem; color:green;">Entrega previa: <a href="${existing.file_path}" target="_blank">Ver Archivo</a> — ${existing.is_late ? '<span style="color:#C52B3D; font-weight:bold;">Tardía</span>' : 'A tiempo'}</div>` : '';
-            const btnLabel = existing ? 'Actualizar Entrega' : 'Enviar Entrega';
-            return `
-            <div class="card" style="margin-bottom:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <div>
-                        <span class="status-badge status-pending">Pendiente</span>
-                        <h3 style="margin-top:10px;">${a.title}</h3>
-                        <p style="color:gray;">${a.subject_name || ''} | Vence: ${a.due_date ? new Date(a.due_date).toLocaleDateString() : '-'}</p>
-                        <p style="margin: 10px 0;">${a.description || ''}</p>
-                        <ul style="font-size:0.9rem; color:#555; margin-left:20px;">
-                            <li>Formatos: PDF, Word, PPT, IMG, TXT</li>
-                            <li>Max: 10 MB</li>
-                        </ul>
-                        ${submittedInfo}
+        // Split pending vs delivered
+        const pending = activities.filter(a => !mySubs[a.activity_id]);
+        const delivered = activities.filter(a => mySubs[a.activity_id]);
+
+        // Render pending (same layout as before)
+        if(pending.length === 0){
+            containerPending.innerHTML = '<div class="card"><p>Sin Tareas Pendientes</p></div>';
+        }else{
+            containerPending.innerHTML = pending.map(a => {
+                const existing = mySubs[a.activity_id];
+                let submittedInfo = '';
+                if(existing){
+                    const lateNote = existing.is_late ? '<span style="color:#C52B3D; font-weight:bold;">Tardía</span>' : 'A tiempo';
+                    submittedInfo = '<div style="margin-top:8px; font-size:0.9rem; color:green;">Entrega previa: <a href="' + (existing.file_path || '') + '" target="_blank">Ver Archivo</a> — ' + lateNote + '</div>';
+                }
+                const btnLabel = existing ? 'Actualizar Entrega' : 'Enviar Entrega';
+                return `
+                <div class="card" style="margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <span class="status-badge status-pending">Pendiente</span>
+                            <h3 style="margin-top:10px;">${a.title}</h3>
+                            <p style="color:gray;">${a.subject_name || ''} | Vence: ${a.due_date ? new Date(a.due_date).toLocaleDateString() : '-'}</p>
+                            <p style="margin: 10px 0;">${a.description || ''}</p>
+                            <ul style="font-size:0.9rem; color:#555; margin-left:20px;">
+                                <li>Formatos: PDF, Word, PPT, IMG, TXT</li>
+                                <li>Max: 10 MB</li>
+                            </ul>
+                            ${submittedInfo}
+                        </div>
+                    </div>
+                    <hr style="margin:15px 0; border:0; border-top:1px solid #eee;">
+                    <div class="upload-area">
+                        <label>Archivo a entregar:</label>
+                        <div style="display:flex; gap:10px; margin-top:5px;">
+                            ${ (a.due_date && (new Date(a.due_date) < new Date())) ? `
+                                <div style="color:#C52B3D; font-weight:bold;">La fecha límite ya pasó. No se permiten envíos ni modificaciones.</div>
+                            ` : `
+                                <input type="file" id="file-${a.activity_id}" class="form-control" ${existing ? `data-submission-id="${existing.submission_id}"` : ''}>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <button id="btn-submit-${a.activity_id}" onclick="subirTarea(${a.activity_id})" class="btn btn-primary"><i class="fas fa-upload"></i> ${btnLabel}</button>
+                                    ${existing ? `<button class="btn btn-danger" onclick="eliminarMiEntrega(${existing.submission_id}, ${a.activity_id})">Eliminar Entrega</button>` : ''}
+                                </div>
+                            `}
+                        </div>
+                        <p id="msg-${a.activity_id}" class="validation-msg"></p>
                     </div>
                 </div>
-                <hr style="margin:15px 0; border:0; border-top:1px solid #eee;">
-                <div class="upload-area">
-                    <label>Archivo a entregar:</label>
-                    <div style="display:flex; gap:10px; margin-top:5px;">
-                        <!-- Deshabilitar subida/edición si la fecha límite ya pasó -->
-                        ${ (a.due_date && (new Date(a.due_date) < new Date())) ? `
-                            <div style="color:#C52B3D; font-weight:bold;">La fecha límite ya pasó. No se permiten envíos ni modificaciones.</div>
-                        ` : `
-                            <input type="file" id="file-${a.activity_id}" class="form-control" ${existing ? `data-submission-id="${existing.submission_id}"` : ''}>
-                            <div style="display:flex; gap:8px; align-items:center;">
-                                <button id="btn-submit-${a.activity_id}" onclick="subirTarea(${a.activity_id})" class="btn btn-primary"><i class="fas fa-upload"></i> ${btnLabel}</button>
-                                ${existing ? `<button class="btn btn-danger" onclick="eliminarMiEntrega(${existing.submission_id}, ${a.activity_id})">Eliminar Entrega</button>` : ''}
-                            </div>
-                        `}
+                `;
+            }).join('');
+        }
+
+        // Render delivered list (compact) with hide button
+        if(delivered.length === 0){
+            containerDelivered.innerHTML = '<div class="card"><p>No has entregado tareas aún.</p></div>';
+        }else{
+            containerDelivered.innerHTML = delivered.map(a => {
+                const s = mySubs[a.activity_id];
+                const lateNote = (s && s.is_late) ? '<span style="color:#C52B3D; font-weight:bold; margin-left:8px;">(Tardía)</span>' : '';
+                const submittedUrl = s ? (s.file_path || '#') : '#';
+                const submittedAt = s && s.submitted_at ? new Date(s.submitted_at).toLocaleString() : '—';
+                return `
+                <div id="delivered-${a.activity_id}" class="card" style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="flex:1;">
+                        <strong>${a.title}</strong>
+                        <div style="font-size:0.9rem; color:#666;">${a.subject_name || ''} — Entregado: ${submittedAt}</div>
+                        <div style="font-size:0.9rem; margin-top:6px;"><a href="${submittedUrl}" target="_blank">Ver entrega</a> ${lateNote}</div>
                     </div>
-                    <p id="msg-${a.activity_id}" class="validation-msg"></p>
+                    <div style="margin-left:12px;">
+                        <button class="btn" onclick="hideDeliveredTask(${a.activity_id})">Ocultar</button>
+                    </div>
                 </div>
-            </div>
-            `;
-        }).join('');
+                `;
+            }).join('');
+        }
+
     }catch(err){
         console.error('Error al cargar tareas:', err);
-        container.innerHTML = '';
+        containerPending.innerHTML = '';
+        containerDelivered.innerHTML = '';
     }
 
 }
@@ -477,11 +549,16 @@ async function renderAsistencia() {
         const records = res.records || [];
         // Mostrar solo sesiones activas que aún no han sido marcadas como 'present'
         const now = new Date();
+        // Use global parseServerDate helper for server date strings
+
+        // Consider sessions pending if they are not already marked 'present' and their close_date is in the future (or absent).
+        // This ensures newly created sessions (or sessions that open soon) are visible to the student instead of hiding them.
         const pending = records.filter(r => {
-            const open = r.open_date ? new Date(r.open_date) : null;
-            const close = r.close_date ? new Date(r.close_date) : null;
-            const activeWindow = open && close && now >= open && now <= close;
-            return activeWindow && r.status !== 'present';
+            const open = r.open_date ? parseServerDate(r.open_date) : null;
+            const close = r.close_date ? parseServerDate(r.close_date) : null;
+            const notExpired = !close || now <= close;
+            const notPresent = r.status !== 'present';
+            return notExpired && notPresent;
         });
         if(pending.length === 0){
             container.innerHTML = `
@@ -494,22 +571,73 @@ async function renderAsistencia() {
         }
         // Mostramos solo las sesiones pendientes para marcar
         const items = pending.map(r => {
-            const open = r.open_date ? new Date(r.open_date) : null;
-            const close = r.close_date ? new Date(r.close_date) : null;
+            const open = r.open_date ? parseServerDate(r.open_date) : null;
+            const close = r.close_date ? parseServerDate(r.close_date) : null;
+            const isOpen = !open || now >= open;
+            const isWithin = (!open || now >= open) && (!close || now <= close);
+            // (no debug logs)
+            const label = `${open ? (open.toLocaleString() + ' → ' + (close ? close.toLocaleString() : '-')) : (close ? ('hasta ' + close.toLocaleString()) : '-')}`;
+            const statusText = r.status === 'present' ? 'Presente' : 'No registrado';
+            const statusColor = r.status === 'present' ? 'green' : 'red';
+            // Always render an active Mark button (data-session-id + onclick) so students can mark regardless of open/close window
+            const btn = `<button class="btn btn-primary" data-session-id="${r.session_id}" onclick="markPresentStudent(${r.session_id})">Marcar Presente</button>`;
             return `
                 <div id="card-asis-${r.session_id}" class="card" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
                     <div>
                         <strong>${r.frequency === 'daily' ? 'Diaria' : 'Semana ' + (r.week_number || '-')}</strong>
-                        <div style="font-size:0.9rem; color:#666;">${open ? open.toLocaleString() : '-'} → ${close ? close.toLocaleString() : '-'}</div>
-                        <div style="margin-top:6px;">Estado: <strong style="color:${r.status === 'present' ? 'green' : 'red'}">${r.status === 'present' ? 'Presente' : 'No registrado'}</strong></div>
+                        <div style="font-size:0.9rem; color:#666;">${label}</div>
+                        <div style="margin-top:6px;">Estado: <strong style="color:${statusColor}">${statusText}</strong></div>
                     </div>
                     <div>
-                        <button class="btn btn-primary" onclick="markPresentStudent(${r.session_id})">Marcar Presente</button>
+                        ${btn}
                     </div>
                 </div>
             `;
         }).join('');
         container.innerHTML = items;
+        // Attach a delegated click handler once to the attendance container so buttons reliably trigger
+        try{
+                if(!container._hasAttendanceHandler){
+                    container.addEventListener('click', (ev) => {
+                        // Prefer explicit data attribute on the button, but fallback to parsing the card id `card-asis-<id>`
+                        const clickedBtn = ev.target && ev.target.closest ? ev.target.closest('button') : null;
+                        if(!clickedBtn) return;
+                        let sid = clickedBtn.getAttribute && clickedBtn.getAttribute('data-session-id');
+                        if(!sid){
+                            const card = ev.target && ev.target.closest ? ev.target.closest('[id^="card-asis-"]') : null;
+                            if(card && card.id){
+                                const m = card.id.match(/card-asis-(\d+)/);
+                                if(m) sid = m[1];
+                            }
+                        }
+                        if(!sid) return;
+                        ev.preventDefault();
+                        try{ markPresentStudent(Number(sid)); }catch(e){ /* ignore */ }
+                    });
+                    container._hasAttendanceHandler = true;
+                }
+        }catch(e){ console.warn('Could not attach delegated handler for attendance buttons', e); }
+
+        // Global fallback: capturing listener to detect clicks that should mark attendance
+        if(!window._attendance_global_marker){
+            document.addEventListener('click', function(ev){
+                try{
+                    const t = ev.target;
+                    const txt = (t && t.textContent) ? t.textContent.trim() : '';
+                    if(!txt.includes('Marcar Presente')) return; // ignore unrelated clicks
+                    const card = t.closest ? t.closest('[id^="card-asis-"]') : null;
+                    if(card && card.id){
+                        const m = card.id.match(/card-asis-(\d+)/);
+                        if(m){
+                            const sid = Number(m[1]);
+                            ev.preventDefault();
+                            try{ markPresentStudent(sid); }catch(e){ /* ignore */ }
+                        }
+                    }
+                }catch(e){ /* ignore */ }
+            }, true); // use capture phase to catch early
+            window._attendance_global_marker = true;
+        }
     }catch(err){
         console.error('Error al obtener asistencia del estudiante:', err);
         container.innerHTML = '';
@@ -528,17 +656,36 @@ function marcarPresente(sesionId) {
 
 // Marca presente (usado desde el HTML) — separando la lógica del render para evitar IIFE en atributos onclick
 async function markPresentStudent(sessionId){
+    const cardBtn = document.querySelector(`#card-asis-${sessionId} button`);
+    const originalText = cardBtn ? cardBtn.textContent : null;
+    if(cardBtn){ cardBtn.disabled = true; }
+
+    // Optimistic UI: immediately show marked state to the student
+    try{ marcarPresente(sessionId); }catch(e){ console.warn('Could not apply optimistic UI', e); }
+
+    const url = `${API_BASE}/attendance/sessions/${sessionId}/mark`;
     try{
-        await apiFetch(`/attendance/sessions/${sessionId}/mark`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ student_user_id: Number(currentUserEstudiante.id) })
-        });
-        await showMessageModal('Listo','Asistencia registrada.');
-        renderAsistencia();
-    }catch(e){
-        console.error('Error marcando asistencia del estudiante:', e);
-        showMessageModal('Error','No se pudo marcar asistencia.');
+        const payload = { student_user_id: Number(currentUserEstudiante.id) };
+        const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const text = await resp.text();
+        let parsed = null;
+        try{ parsed = text ? JSON.parse(text) : null; }catch(pe){ /* ignore parse */ }
+        if(!resp.ok){
+            // server rejected: refresh the list to show correct state and inform the user
+            const serverMsg = (parsed && (parsed.error || parsed.message)) ? (parsed.error || parsed.message) : (`HTTP ${resp.status} - ${text}`);
+            await showMessageModal('Error', serverMsg || 'No se pudo registrar la asistencia.');
+            try{ await renderAsistencia(); }catch(e){}
+            return;
+        }
+        // success: ensure professor gets notified via SSE (backend emits notification)
+        try{ await showMessageModal('Listo','Asistencia registrada.'); }catch(e){}
+        // keep optimistic UI; also refresh minimal data in background
+        try{ renderAsistencia(); }catch(e){}
+        return;
+    }catch(err){
+        console.error('Network error marking attendance:', err);
+        await showMessageModal('Error','No se pudo conectar al servidor. Intente nuevamente.');
+        try{ await renderAsistencia(); }catch(e){}
     }
 }
 
@@ -581,22 +728,16 @@ async function eliminarMiEntrega(submissionId, activityId){
     }
 }
 
+// Ocultar tarjeta de tarea entregada en el panel "Tareas Entregadas"
+function hideDeliveredTask(activityId){
+    try{
+        const el = document.getElementById(`delivered-${activityId}`);
+        if(el) el.style.display = 'none';
+    }catch(e){ /* noop */ }
+}
+
 // Exponer funciones usadas por atributos onclick (si el script se carga como module los onclick pierden scope)
-Object.assign(window, {
-    showSection,
-    subirTarea,
-    eliminarMiEntrega,
-    markPresentStudent,
-    renderTareasPendientes,
-    renderAsistencia,
-    renderReportes,
-    renderCalendarioVisual,
-    renderRecentActivities,
-    startPollingStudentUpdates,
-    openActivityFromCalendar,
-    openAttendanceFromCalendar,
-    openCoursePanel
-});
+// (se asignan al final del archivo para evitar problemas con plantillas multilínea)
 
 // 5. Reportes (Obtener entregas del estudiante desde backend)
 async function renderReportes() {

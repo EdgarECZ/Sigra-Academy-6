@@ -22,8 +22,15 @@ export class AsistenciaController {
         const validation = validateMark(req.body);
         try{
             if(!validation.success) return res.status(400).json({ error: 'Datos inválidos', details: validation.error });
+            console.log('markPresent request', { sessionId, body: req.body });
             const result = await AsistenciaModel.markPresent(sessionId, validation.data.student_user_id);
+            console.log('markPresent result', result && (result.error ? { error: result.error } : { message: result.message }));
             if(result.error) return res.status(400).json({ error: result.error });
+            // Notify interested clients (professors, dashboards) about the attendance mark
+            try{
+                const { notify } = await import('../../../api/notifications/notifications.service.mjs');
+                try{ await notify('attendance_marked', { sessionId, record: result.record }); }catch(e){ /* ignore notify errors */ }
+            }catch(e){ /* ignore import errors */ }
             return res.status(200).json(result);
         }catch(e){
             console.error('Error marcando presente:', e);
@@ -162,6 +169,18 @@ export class AsistenciaController {
         }catch(e){
             console.error('Error generando reporte de estudiante:', e);
             return res.status(500).json({ error: 'Error en reporte de estudiante.' });
+        }
+    }
+
+    static async deleteSession(req, res){
+        const { sessionId } = req.params;
+        try{
+            const result = await AsistenciaModel.deleteSession(sessionId);
+            if(result.error) return res.status(400).json({ error: result.error });
+            return res.status(200).json(result);
+        }catch(e){
+            console.error('Error eliminando sesión:', e);
+            return res.status(500).json({ error: 'Error al eliminar sesión.' });
         }
     }
 }

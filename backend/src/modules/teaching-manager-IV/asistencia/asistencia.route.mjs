@@ -14,6 +14,8 @@ router.get('/sessions/:sessionId/export', AsistenciaController.exportSession);
 router.get('/sections/:sectionId/report/export', AsistenciaController.exportSectionReport);
 // List sessions by section
 router.get('/sections/:sectionId/sessions', AsistenciaController.listSessions);
+// Delete a session
+router.delete('/sessions/:sessionId', AsistenciaController.deleteSession);
 // Reports
 router.get('/sections/:sectionId/report', AsistenciaController.sectionReport);
 router.get('/students/:studentId/report', AsistenciaController.studentReport);

@@ -23,6 +23,41 @@ function showSection(sectionId) {
         }catch(e){ /* ignore errors rendering panel */ }
     }
 }
+
+// SSE notifications for professor (listen for attendance_marked to update table rows live)
+function initProfessorNotifications(){
+    if(typeof EventSource === 'undefined') return;
+    try{
+        const url = `${API_BASE}/notifications/stream?user_id=${currentUserProfesor.id}`;
+        const es = new EventSource(url);
+        es.addEventListener('attendance_marked', (ev) => {
+            try{
+                const data = JSON.parse(ev.data || '{}');
+                const sessionId = data.sessionId || data.session_id || null;
+                const record = data.record || data;
+                if(!sessionId) return;
+                // If the marked record belongs to the currently active session, update the row
+                if(window.activeSessionId && String(window.activeSessionId) === String(sessionId)){
+                    // row id uses record-<record_id>
+                    const rid = record.record_id || record.recordId || record.id || null;
+                    if(rid){
+                        const row = document.getElementById(`record-${rid}`);
+                        if(row){
+                            const cols = row.querySelectorAll('td');
+                            if(cols[1]){ cols[1].textContent = 'Presente'; cols[1].style.color = 'green'; cols[1].style.fontWeight = 'bold'; }
+                            if(cols[2]){ cols[2].innerHTML = ''; }
+                            return;
+                        }
+                    }
+                    // fallback: reload records for the session
+                    try{ loadSessionRecords(sessionId); }catch(e){}
+                }
+            }catch(e){ console.warn('Error handling attendance_marked SSE', e); }
+        });
+        es.onerror = (err) => { try{ es.close(); }catch(e){} };
+        window._professor_sse = es;
+    }catch(e){ console.warn('Could not initialize professor SSE', e); }
+}
 // Exponer como global por si HTML usa onclick
 window.showSection = showSection;
 
@@ -47,6 +82,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarCursosDashboard();
     renderEntregas();
     setupAttendanceFormUI();
+    // Start SSE for professor notifications (attendance updates)
+    try{ if(typeof initProfessorNotifications === 'function') initProfessorNotifications(); }catch(e){ /* ignore */ }
     // Wire change handler: when assignment select changes, render activities into Crear Tarea panel
     try{
         const tareaSelect = document.getElementById('tarea-curso-id');
@@ -56,6 +93,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 else { const p = document.getElementById('assignment-activities-panel'); if(p) p.innerHTML = ''; }
             });
         }
+            const asistenciaSelect = document.getElementById('asistencia-curso-id');
+            if(asistenciaSelect){
+                asistenciaSelect.addEventListener('change', () => {
+                    if(asistenciaSelect.value) cargarSesiones(asistenciaSelect.value);
+                    else { const c = document.getElementById('sesiones-list'); if(c) c.innerHTML = ''; const tbody = document.querySelector('#tabla-reporte-asistencia tbody'); if(tbody) tbody.innerHTML = '<tr><td colspan="3">Seleccione una asignación para ver sus sesiones.</td></tr>'; }
+                });
+            }
     }catch(e){ /* ignore */ }
 });
 
@@ -98,14 +142,18 @@ async function cargarSelectCursos() {
                     select.innerHTML += `<option value="${s.section_id}">${label}</option>`;
                 }
             });
-            // If this is the tarea select, preselect the first available assignment and render its activities
-            if(id === 'tarea-curso-id'){
+            // If this is the tarea or asistencia select, preselect the first available assignment and render its content
+            if(id === 'tarea-curso-id' || id === 'asistencia-curso-id'){
                 const firstOption = Array.from(select.options).find(o => o.value);
                 if(firstOption){
                     select.value = firstOption.value;
-                    // trigger rendering of activities if renderer exists
-                    if(typeof renderAssignmentActivities === 'function'){
+                    // trigger rendering of activities if renderer exists (for tarea)
+                    if(id === 'tarea-curso-id' && typeof renderAssignmentActivities === 'function'){
                         try{ renderAssignmentActivities(firstOption.value); }catch(e){}
+                    }
+                    // trigger loading of sesiones for asistencia
+                    if(id === 'asistencia-curso-id'){
+                        try{ cargarSesiones(firstOption.value); }catch(e){}
                     }
                 }
             }
@@ -502,7 +550,13 @@ async function cargarSesiones(assignmentId){
         const res = await apiFetch(`/attendance/sections/${sectionId}/sessions`);
         const sessions = res.sessions || [];
         const container = document.getElementById('sesiones-list');
-        if(sessions.length === 0){ container.innerHTML = '<div class="card"><p>Sin Asistencias Activas</p></div>'; return; }
+        if(sessions.length === 0){
+            container.innerHTML = '<div class="card"><p>Sin Asistencias Activas</p></div>';
+            // Clear report table and hide session controls
+            const tbody = document.querySelector('#tabla-reporte-asistencia tbody'); if(tbody) tbody.innerHTML = '<tr><td colspan="3">No hay sesiones creadas para esta asignación.</td></tr>';
+            const sc = document.getElementById('session-controls'); if(sc) sc.style.display = 'none';
+            return;
+        }
         container.innerHTML = sessions.map(s => `
             <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
                 <div>
@@ -510,8 +564,9 @@ async function cargarSesiones(assignmentId){
                     <div style="font-size:0.9rem; color:#666;">${new Date(s.open_date).toLocaleString()} → ${new Date(s.close_date).toLocaleString()}</div>
                 </div>
                 <div style="display:flex; gap:8px;">
-                    <button class="btn btn-secondary" onclick="loadSessionRecords(${s.session_id})">Ver</button>
+                    <button class="btn btn-secondary" onclick="viewSessionFromCard(${s.session_id}, '${s.frequency}', ${s.week_number === undefined ? 'null' : s.week_number}, '${s.open_date}', '${s.close_date}')">Ver</button>
                     <button class="btn btn-success" onclick="exportSessionById(${s.session_id})">Exportar</button>
+                    <button class="btn" style="background:#C52B3D;color:white;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;" onclick="deleteSession(${s.session_id})">Eliminar</button>
                 </div>
             </div>
         `).join('');
@@ -784,6 +839,66 @@ async function exportarAsistenciaCSV() {
     document.body.removeChild(link);
 }
 
+// View session helper: called when user presses "Ver" on a session card
+async function viewSessionFromCard(sessionId, frequency, weekNumber, openDate, closeDate){
+    try{
+        window.activeSessionId = sessionId;
+        // Populate the session summary above the table
+        const summary = document.getElementById('session-summary-above-table');
+        if(summary){
+            const label = (String(frequency) === 'daily') ? `Asistencia Diaria — ${new Date(openDate).toLocaleString()} a ${new Date(closeDate).toLocaleString()}` : `Asistencia Semana ${weekNumber} — ${new Date(openDate).toLocaleString()} a ${new Date(closeDate).toLocaleString()}`;
+            summary.innerHTML = `<div style="font-weight:600; color:#123E6A;">${label}</div><div><button id="summary-export" class="btn btn-success" style="margin-right:8px;" onclick="exportSessionById(${sessionId})"><i class="fas fa-file-excel"></i> Exportar</button><button id="summary-view" class="btn" style="background:#0B57A4;color:#fff;border:none;padding:6px 10px;border-radius:8px;">Ver</button></div>`;
+            // Wire the small local Ver button to focus (it simply scrolls to table)
+            const sv = summary.querySelector('#summary-view'); if(sv) sv.addEventListener('click', (ev) => { const tbl = document.getElementById('tabla-reporte-asistencia'); if(tbl){ tbl.scrollIntoView({ behavior: 'smooth', block: 'start' }); tbl.setAttribute('tabindex','-1'); tbl.focus(); } });
+        }
+
+        // Also ensure main session-controls reflect the selected session (kept for compatibility)
+        const sc = document.getElementById('session-controls'); if(sc) sc.style.display = 'block';
+        const si = document.getElementById('session-info'); if(si){
+            if(String(frequency) === 'daily') si.textContent = `Asistencia Diaria — ${new Date(openDate).toLocaleString()} a ${new Date(closeDate).toLocaleString()}`;
+            else si.textContent = `Asistencia Semana ${weekNumber} — ${new Date(openDate).toLocaleString()} a ${new Date(closeDate).toLocaleString()}`;
+        }
+        const be = document.getElementById('btn-export-session'); if(be) be.style.display = 'inline-block';
+
+        // Load records and then scroll to and focus the table
+        await loadSessionRecords(sessionId);
+        const tbl = document.getElementById('tabla-reporte-asistencia');
+        if(tbl){ tbl.scrollIntoView({ behavior: 'smooth', block: 'start' }); tbl.setAttribute('tabindex','-1'); tbl.focus(); }
+    }catch(e){ console.error('Error activando sesión:', e); showMessageModal && showMessageModal('Error','No fue posible cargar la sesión.'); }
+}
+
+// Delete session handler: calls backend DELETE and updates UI
+async function deleteSession(sessionId){
+    if(!sessionId) return;
+    try{
+        // Use styled confirm modal instead of native alert/confirm
+        let confirmed = false;
+        if(typeof showConfirmModal === 'function'){
+            confirmed = await showConfirmModal('Confirmar eliminación', '¿Desea eliminar esta sesión de asistencia?', 'Eliminar', 'Cancelar');
+        }else{
+            try{ if(confirm('¿Desea eliminar esta sesión de asistencia?')) confirmed = true; }catch(_){ }
+        }
+        if(!confirmed) return;
+        const res = await apiFetch(`/attendance/sessions/${sessionId}`, { method: 'DELETE' });
+        if(res && res.error){ showMessageModal && showMessageModal('Error', res.error); return; }
+        // remove the card from the sessions list
+        try{
+            const container = document.getElementById('sesiones-list');
+            if(container){
+                const cards = Array.from(container.children || []);
+                for(const c of cards){ if(c.innerHTML && c.innerHTML.includes(`loadSessionRecords(${sessionId})`) || c.innerHTML.includes(`viewSessionFromCard(${sessionId}`)) { c.parentNode && c.parentNode.removeChild(c); break; } }
+            }
+        }catch(e){ /* ignore DOM remove errors */ }
+        // if the deleted session was active, clear the table and hide controls
+        if(window.activeSessionId && String(window.activeSessionId) === String(sessionId)){
+            window.activeSessionId = null;
+            const tbody = document.querySelector('#tabla-reporte-asistencia tbody'); if(tbody) tbody.innerHTML = '<tr><td colspan="3">Seleccione una sesión y presione Ver para mostrar registros.</td></tr>';
+            const sc = document.getElementById('session-controls'); if(sc) sc.style.display = 'none';
+        }
+        showMessageModal && showMessageModal('Listo','Sesión eliminada.');
+    }catch(e){ console.error('Error eliminando sesión', e); showMessageModal && showMessageModal('Error','No fue posible eliminar la sesión.'); }
+}
+
 // Helper: genera CSV con BOM y descarga (campos entrecomillados)
 function downloadCSV(filename, headers, rows){
     const BOM = '\uFEFF';
@@ -822,4 +937,6 @@ Object.assign(window, {
     openEditActivityModal,
     confirmDeleteActivity,
     confirmDeleteAssignment
+    ,viewSessionFromCard,
+    deleteSession
 });

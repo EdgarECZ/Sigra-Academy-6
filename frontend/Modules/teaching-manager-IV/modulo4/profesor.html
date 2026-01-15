@@ -219,13 +219,11 @@
                 </div>
             </div>
             
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
-                <h3>Reporte de Asistencia (Última Sesión)</h3>
-                <button id="btn-export-asistencia" onclick="exportarAsistenciaCSV()" class="btn btn-success" style="display:none;">
-                    <i class="fas fa-file-excel"></i> Descargar Reporte
-                </button>
+            <!-- Session summary will be injected here when a session is selected -->
+            <div id="session-summary-above-table" style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+                <!-- populated dynamically -->
             </div>
-            
+
             <table id="tabla-reporte-asistencia">
                 <thead>
                     <tr>

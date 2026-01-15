@@ -141,3 +141,30 @@ window.showInputModal = (title, labelText = '', placeholder = '', validator = (v
         input.focus();
     });
 };
+
+// Styled confirm modal that returns true/false
+window.showConfirmModal = (title, message, acceptText='Aceptar', cancelText='Cancelar') => {
+    return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.inset = '0';
+        overlay.style.background = 'rgba(0,0,0,0.35)';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.zIndex = 9999;
+        overlay.innerHTML = `
+            <div style="background:white; padding:22px; border-radius:12px; width:420px; max-width:90%; box-shadow:0 8px 30px rgba(0,0,0,0.15);">
+                <h3 style="margin-top:0; margin-bottom:8px; color:#123E6A;">${title}</h3>
+                <div style="color:#333; margin-bottom:18px;">${message}</div>
+                <div style="display:flex; justify-content:flex-end; gap:10px;">
+                    <button id="modal-cancel-btn" style="background:#e6eef9; color:#0b57a4; border:none; padding:8px 14px; border-radius:8px; cursor:pointer;">${cancelText}</button>
+                    <button id="modal-accept-btn" style="background:#C52B3D; color:white; border:none; padding:8px 14px; border-radius:8px; cursor:pointer;">${acceptText}</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.querySelector('#modal-cancel-btn').addEventListener('click', () => { document.body.removeChild(overlay); resolve(false); });
+        overlay.querySelector('#modal-accept-btn').addEventListener('click', () => { document.body.removeChild(overlay); resolve(true); });
+    });
+};

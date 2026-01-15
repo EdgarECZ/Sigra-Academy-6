@@ -17,7 +17,7 @@
         <div class="nav-links">
             <a href="#" onclick="showSection('inicio')" class="active">Inicio</a>
             <a href="#" onclick="showSection('mis-cursos')">Mis Cursos</a>
-            <a href="#" onclick="showSection('tareas-pendientes')">Tareas Pendientes</a>
+            <a href="#" onclick="showSection('tareas-pendientes')">Tareas</a>
             <a href="#" onclick="showSection('asistencia')">Asistencia</a>
             <a href="#" onclick="showSection('reportes')">Reportes</a>
         </div>
@@ -62,9 +62,17 @@
         </section>
 
         <section id="tareas-pendientes" class="view-section">
-            <h2><i class="fas fa-tasks"></i> Tareas Pendientes</h2>
-            <div id="lista-tareas-pendientes">
+            <h2><i class="fas fa-tasks"></i> Tareas</h2>
+            <div style="display:flex; gap:20px; align-items:flex-start;">
+                <div style="flex:1;">
+                    <h3>Tareas Pendientes</h3>
+                    <div id="lista-tareas-pendientes"></div>
                 </div>
+                <div style="width:360px; max-width:40%;">
+                    <h3>Tareas Entregadas</h3>
+                    <div id="lista-tareas-entregadas"></div>
+                </div>
+            </div>
         </section>
 
         <section id="asistencia" class="view-section">

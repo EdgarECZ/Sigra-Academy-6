@@ -125,12 +125,23 @@ export class AsistenciaModel {
         const [srows] = await db.query(`SELECT * FROM attendance_sessions WHERE session_id = ?`, [sessionId]);
         if(srows.length === 0) return { error: 'Sesión no encontrada.' };
         const s = srows[0];
+        // Normalize DB DATETIME strings to parse reliably (treat 'YYYY-MM-DD HH:mm:ss' as local)
+        const normalize = (v) => {
+            if(!v) return null;
+            if(v instanceof Date) return v;
+            // Replace space with T to make it an ISO-like string
+            const s = String(v).trim().replace(' ', 'T');
+            const d = new Date(s);
+            if(Number.isNaN(d.getTime())) return null;
+            return d;
+        };
+        // NOTE: we intentionally do NOT block marking by open/close times.
+        // The application requires that a student may mark present and the
+        // backend will set the record to 'present' regardless of session window.
+        // Keep parsed open/close available for logging or future uses.
         const now = new Date();
-        if(s.open_date && s.close_date){
-            const open = new Date(s.open_date);
-            const close = new Date(s.close_date);
-            if(now < open || now > close) return { error: 'La sesión no está activa en este momento.' };
-        }
+        const open = normalize(s.open_date);
+        const close = normalize(s.close_date);
         // marca 'present' y set marked_at
         const [rows] = await db.query(`SELECT * FROM attendance_records WHERE session_id = ? AND student_user_id = ?`, [sessionId, studentId]);
         if(rows.length === 0) return { error: 'Registro no encontrado para ese estudiante y sesión.' };
@@ -221,6 +232,24 @@ export class AsistenciaModel {
                 // default frequency to weekly
                 rows.forEach(x => { x.frequency = 'weekly'; });
                 return { message: `Se encontraron ${rows.length} registros.`, records: rows };
+            }
+            throw e;
+        }
+    }
+
+    static async deleteSession(sessionId){
+        if(!sessionId) return { error: 'No se proporcionó el ID de la sesión.' };
+        try{
+            const [rows] = await db.query(`SELECT * FROM attendance_sessions WHERE session_id = ?`, [sessionId]);
+            if(rows.length === 0) return { error: 'Sesión no encontrada.' };
+            // Delete attendance records first
+            const [delRec] = await db.query(`DELETE FROM attendance_records WHERE session_id = ?`, [sessionId]);
+            // Then delete the session
+            const [delSess] = await db.query(`DELETE FROM attendance_sessions WHERE session_id = ?`, [sessionId]);
+            return { message: 'Sesión eliminada.', deletedRecords: delRec.affectedRows || 0, deletedSession: (delSess.affectedRows || 0) > 0 };
+        }catch(e){
+            if(e && (e.code === 'ER_NO_SUCH_TABLE' || e.code === 'ER_BAD_FIELD_ERROR')){
+                return { error: `La base de datos no parece tener las migraciones de asistencia aplicadas (${e.code}). Por favor ejecute "backend/resources/attendance.sql".` };
             }
             throw e;
         }
