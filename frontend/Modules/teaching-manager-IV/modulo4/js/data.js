@@ -22,45 +22,12 @@ window._backend_offline_notified = false;
 window._showBackendOfflineBanner = () => {
     if(window._backend_offline_notified) return;
     window._backend_offline_notified = true;
-    const id = 'backend-offline-banner';
-    if(document.getElementById(id)) return;
-    const b = document.createElement('div');
-    b.id = id;
-    b.style.position = 'fixed';
-    b.style.right = '12px';
-    b.style.top = '12px';
-    b.style.background = '#FFC107';
-    b.style.color = '#000';
-    b.style.padding = '8px 12px';
-    b.style.borderRadius = '8px';
-    b.style.zIndex = 99999;
-    b.style.display = 'flex';
-    b.style.alignItems = 'center';
-    b.style.gap = '10px';
-
-    const msg = document.createElement('span');
-    // Use a non-revealing, user-friendly message by default
-    msg.textContent = (window.__SHOW_DEV_UI__) ? 'Aviso: el servidor no responde. Algunas funciones pueden no estar disponibles.' : 'Algunas funciones pueden no estar disponibles temporalmente.';
-    b.appendChild(msg);
-
-    // Only show the 'instructions' button when explicitly running in a local/dev environment
+    // Do not create or show any visual banner. Log only to console per project requirement.
     if(window.__SHOW_DEV_UI__){
-        const btn = document.createElement('button');
-        btn.textContent = 'Instrucciones para arrancar backend';
-        btn.className = 'btn';
-        btn.style.background = '#0B57A4';
-        btn.style.color = 'white';
-        btn.style.border = 'none';
-        btn.style.padding = '6px 8px';
-        btn.style.borderRadius = '6px';
-        btn.style.cursor = 'pointer';
-        btn.addEventListener('click', () => {
-            window.showMessageModal('Arrancar backend', `Para desarrollo, abra una terminal y ejecute:\n\n  cd backend && pnpm run dev\n\nSi no tiene pnpm, use:\n\n  cd backend && node app.mjs\n\nTambién puede ejecutar: node scripts/dev/start_backend_dev.mjs desde la raíz del repo para que el helper arranque el servidor y muestre logs.`,'Entendido');
-        });
-        b.appendChild(btn);
+        console.warn('Aviso: el servidor no responde. Algunas funciones pueden no estar disponibles. (UI suppressed)');
+    } else {
+        console.warn('El servidor no está disponible. Consulte los logs de la consola. (UI suppressed)');
     }
-
-    document.body.appendChild(b);
 };
 
 // Helper: quick health check against server root /_health. Returns true/false
@@ -105,6 +72,15 @@ window.apiFetch = async (pathOrUrl, options = {}) => {
 // Small modal helper utilities used across modules
 window.showMessageModal = (title, message, okText='Aceptar') => {
     return new Promise(resolve => {
+        // If backend is already flagged as offline, suppress showing error modals in the UI
+        // (log to console instead). This prevents exposing DB/connectivity errors to users.
+        try{
+            if(window._backend_offline && title && String(title).toLowerCase() === 'error'){
+                console.error('Suppressed UI error modal while backend offline:', message);
+                resolve(true);
+                return;
+            }
+        }catch(e){ /* ignore */ }
         // Create overlay
         const overlay = document.createElement('div');
         overlay.style.position = 'fixed';

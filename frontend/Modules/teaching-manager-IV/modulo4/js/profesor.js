@@ -9,6 +9,19 @@ function showSection(sectionId) {
         link.classList.remove('active');
         if(link.getAttribute('onclick').includes(sectionId)) link.classList.add('active');
     });
+    // When showing the task management tab, auto-load activities for the selected assignment
+    if(sectionId === 'crear-tarea'){
+        try{
+            const sel = document.getElementById('tarea-curso-id');
+            const panel = document.getElementById('assignment-activities-panel');
+            if(sel && sel.value){
+                // render activities for selected assignment
+                if(typeof renderAssignmentActivities === 'function') renderAssignmentActivities(sel.value);
+            } else if(panel){
+                panel.innerHTML = ''; // ensure panel empty if no selection
+            }
+        }catch(e){ /* ignore errors rendering panel */ }
+    }
 }
 // Exponer como global por si HTML usa onclick
 window.showSection = showSection;
@@ -24,14 +37,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const healthy = await window.checkBackendHealth(2000);
     if(!healthy){
         window._backend_offline = true;
-        window._showBackendOfflineBanner();
-        const container = document.getElementById('dashboard-main') || document.body;
-        const parts = container.querySelectorAll('.card');
-        parts.forEach(p => p.innerHTML = '<p style="color:#666; padding:12px;">Servidor inaccesible. Revise la conexión.</p>');
-        // Add retry control
-        const retry = document.createElement('button'); retry.textContent = 'Reintentar conexión'; retry.className = 'btn';
-        retry.addEventListener('click', async () => { retry.disabled = true; retry.textContent = 'Comprobando...'; if(await window.checkBackendHealth(3000)) location.reload(); else { retry.disabled=false; retry.textContent='Reintentar conexión'; window._showBackendOfflineBanner(); } });
-        container.insertBefore(retry, container.firstChild);
+        window._backend_offline_notified = true;
+        console.warn('Backend health check failed: server unreachable; suppressing visible error messages. Check console for details.');
         return;
     }
 
@@ -40,6 +47,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarCursosDashboard();
     renderEntregas();
     setupAttendanceFormUI();
+    // Wire change handler: when assignment select changes, render activities into Crear Tarea panel
+    try{
+        const tareaSelect = document.getElementById('tarea-curso-id');
+        if(tareaSelect){
+            tareaSelect.addEventListener('change', () => {
+                if(tareaSelect.value && typeof renderAssignmentActivities === 'function') renderAssignmentActivities(tareaSelect.value);
+                else { const p = document.getElementById('assignment-activities-panel'); if(p) p.innerHTML = ''; }
+            });
+        }
+    }catch(e){ /* ignore */ }
 });
 
 function setupAttendanceFormUI(){
@@ -81,6 +98,17 @@ async function cargarSelectCursos() {
                     select.innerHTML += `<option value="${s.section_id}">${label}</option>`;
                 }
             });
+            // If this is the tarea select, preselect the first available assignment and render its activities
+            if(id === 'tarea-curso-id'){
+                const firstOption = Array.from(select.options).find(o => o.value);
+                if(firstOption){
+                    select.value = firstOption.value;
+                    // trigger rendering of activities if renderer exists
+                    if(typeof renderAssignmentActivities === 'function'){
+                        try{ renderAssignmentActivities(firstOption.value); }catch(e){}
+                    }
+                }
+            }
         });
     }catch(err){
         console.error('Error al cargar cursos:', err);
@@ -105,8 +133,9 @@ async function cargarCursosDashboard() {
             </div>
         `).join('');
     }catch(err){
-        if(window.__SHOW_DEV_UI__) console.error('Error al cargar cursos del dashboard:', err);
-        container.innerHTML = '<div class="card"><p>No fue posible cargar los cursos. Intente nuevamente más tarde.</p></div>';
+        console.error('Error al cargar cursos del dashboard:', err);
+        // UI suppressed to avoid showing DB errors; check console
+        container.innerHTML = '';
     }
 }
 
@@ -156,8 +185,9 @@ async function cargarAlumnos() {
         });
         updatePaginationControls();
     }catch(err){
-        if(window.__SHOW_DEV_UI__) console.error('Error al cargar alumnos:', err);
-        tbody.innerHTML = `<tr><td colspan="4">No fue posible obtener la lista de alumnos. Intente más tarde.</td></tr>`;
+        console.error('Error al cargar alumnos:', err);
+        // UI suppressed for backend data errors; clear table
+        tbody.innerHTML = '';
         updatePaginationControls();
     }
 }
@@ -320,8 +350,8 @@ async function renderEntregas() {
             }
         }
     }catch(err){
-        if(window.__SHOW_DEV_UI__) console.error('Error al renderizar entregas:', err);
-        tbody.innerHTML = `<tr><td colspan="6">No fue posible cargar las entregas. Intente más tarde.</td></tr>`;
+        console.error('Error al cargar entregas:', err);
+        tbody.innerHTML = '';
     }
 }
 
@@ -485,60 +515,132 @@ async function cargarSesiones(assignmentId){
                 </div>
             </div>
         `).join('');
-    }catch(e){ console.error('Error cargando sesiones', e); document.getElementById('sesiones-list').innerHTML = '<div class="card"><p>Error cargando sesiones.</p></div>'; }
+    }catch(e){ console.error('Error cargando sesiones', e); document.getElementById('sesiones-list').innerHTML = ''; }
 } 
 
 // --- CRUD Helpers para asignaciones y actividades (UI) ---
 async function openManageAssignment(assignmentId){
     try{
-        const data = await apiFetch(`/assignments/assignment/${assignmentId}/activities`);
-        const activities = data.activities || [];
+        // Only present resource management option and a shortcut to the Crear Tarea tab.
         const content = document.createElement('div');
         content.style.maxHeight = '60vh'; content.style.overflowY = 'auto';
-        content.innerHTML = `<h3>Actividades de la asignación ${assignmentId}</h3>` + (activities.length === 0 ? '<p>No hay actividades.</p>' : '');
-        activities.forEach(a => {
-            const div = document.createElement('div');
-            div.style.padding = '8px 0'; div.style.borderBottom = '1px solid #eee';
-            div.innerHTML = `<strong>${a.title}</strong> <div style="font-size:0.9rem; color:#666;">Vence: ${a.due_date ? new Date(a.due_date).toLocaleString() : 'Sin fecha'}</div>`;
-            const btns = document.createElement('div'); btns.style.marginTop = '8px'; btns.style.display = 'flex'; btns.style.gap = '8px';
-            const edit = document.createElement('button'); edit.className = 'btn'; edit.textContent = 'Editar'; edit.onclick = () => openEditActivityModal(a.activity_id);
-            const del = document.createElement('button'); del.className = 'btn btn-danger'; del.textContent = 'Eliminar'; del.onclick = () => confirmDeleteActivity(a.activity_id);
-            btns.appendChild(edit); btns.appendChild(del);
-            div.appendChild(btns);
-            content.appendChild(div);
-        });
+        content.innerHTML = `<h3>Asignación ${assignmentId}</h3><p>Seleccione una acción:</p>`;
+
         // Button to manage resources for this assignment
         const manageResBtn = document.createElement('button'); manageResBtn.className = 'btn'; manageResBtn.style.marginTop = '10px'; manageResBtn.textContent = 'Gestionar recursos';
         manageResBtn.onclick = () => {
-            // overlay for resources
-            const ov = document.createElement('div'); ov.style.position='fixed'; ov.style.inset='0'; ov.style.background='rgba(0,0,0,0.35)'; ov.style.display='flex'; ov.style.alignItems='center'; ov.style.justifyContent='center'; ov.style.zIndex=10000;
+            // ensure no duplicate overlays stack
+            document.querySelectorAll('.tm-res-overlay').forEach(e => e.remove());
+            // open the same resource overlay as before
+            const ov = document.createElement('div'); ov.className = 'tm-res-overlay'; ov.style.position='fixed'; ov.style.inset='0'; ov.style.background='rgba(0,0,0,0.35)'; ov.style.display='flex'; ov.style.alignItems='center'; ov.style.justifyContent='center'; ov.style.zIndex=10000;
             const box2 = document.createElement('div'); box2.style.background='white'; box2.style.padding='18px'; box2.style.borderRadius='10px'; box2.style.width='750px'; box2.style.maxWidth='95%';
             const title = document.createElement('h3'); title.textContent = 'Recursos - Asignación ' + assignmentId; box2.appendChild(title);
             const list = document.createElement('div'); list.style.maxHeight='55vh'; list.style.overflowY='auto'; list.style.marginBottom='8px'; box2.appendChild(list);
             const form = document.createElement('form'); form.enctype='multipart/form-data'; form.innerHTML = `<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;"><input type='text' name='title' placeholder='Título' required style='flex:1;padding:6px;' /><select name='resource_type' style='padding:6px;'><option value='PDF'>PDF</option><option value='LINK'>Enlace</option><option value='OTHER'>Otro</option></select></div><div style='display:flex; gap:8px; align-items:center;'><input type='file' name='file' /><input type='text' name='url' placeholder='URL (opcional)' style='flex:1;padding:6px;' /><button type='submit' class='btn btn-primary'>Subir</button></div>`;
-            form.addEventListener('submit', async (e) => { e.preventDefault(); try{ const fd = new FormData(form); fd.append('assignment_id', String(assignmentId)); const f = form.querySelector('input[type=file]'); if(f && f.files && f.files.length>0) fd.append('file', f.files[0]); const titleVal = form.querySelector('input[name=title]').value; if(!titleVal) return showMessageModal('Atención','Ingrese un título'); const r = await fetch(`${API_BASE}/course-resources/resources`, { method: 'POST', body: fd }); if(!r.ok){ const txt = await r.text(); throw new Error(txt || 'Error'); } await showMessageModal('Listo','Recurso subido'); form.reset(); await loadResourcesList(); }catch(err){ console.error('Error subiendo recurso', err); showMessageModal('Error','No fue posible subir recurso'); } });
+            // Use the deterministic FormData builder already present earlier in the file
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try{
+                    const titleVal = form.querySelector('input[name=title]').value;
+                    if(!titleVal) return showMessageModal('Atención','Ingrese un título');
+
+                    const fd = new FormData();
+                    fd.append('assignment_id', String(assignmentId));
+                    fd.append('title', titleVal);
+                    const rt = form.querySelector('select[name=resource_type]');
+                    fd.append('resource_type', rt ? rt.value : 'PDF');
+                    const urlVal = form.querySelector('input[name=url]').value;
+                    if(urlVal) fd.append('url', urlVal);
+
+                    const f = form.querySelector('input[type=file]');
+                    if(f && f.files && f.files.length>0) fd.append('file', f.files[0]);
+
+                    const r = await fetch(`${API_BASE}/course-resources/resources`, { method: 'POST', body: fd });
+                    if(!r.ok){ const txt = await r.text(); throw new Error(txt || 'Error'); }
+                    const created = await r.json().catch(()=>null);
+                    // close overlay and show the newly created resource (open link if available)
+                    try{ if(ov && ov.parentNode) ov.parentNode.removeChild(ov); }catch(e){}
+                    form.reset();
+                    if(created && (created.resource || created.file_path_or_url || created.url)){
+                        const resObj = created.resource || created;
+                        const u = resObj.file_path_or_url || resObj.url || null;
+                        if(u) window.open(u, '_blank');
+                        showMessageModal && showMessageModal('Listo','Recurso subido');
+                        return;
+                    }
+                    showMessageModal && showMessageModal('Listo','Recurso subido');
+                }catch(err){ console.error('Error subiendo recurso', err); showMessageModal('Error','No fue posible subir recurso'); }
+            });
             box2.appendChild(form);
             const closeBtn = document.createElement('button'); closeBtn.className='btn'; closeBtn.style.marginTop='10px'; closeBtn.textContent='Cerrar'; closeBtn.onclick = () => document.body.removeChild(ov);
             box2.appendChild(closeBtn);
             ov.appendChild(box2); document.body.appendChild(ov);
 
             async function loadResourcesList(){
-                try{ list.innerHTML = '<p>Cargando recursos...</p>'; const res = await apiFetch(`/course-resources/resources/assignment/${assignmentId}`); const resources = res.resources || []; if(resources.length === 0){ list.innerHTML = '<p>No hay recursos.</p>'; return; } list.innerHTML = ''; resources.forEach(r => { const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.padding='8px 0'; row.style.borderBottom='1px solid #eee'; row.innerHTML = `<div><strong>${r.title}</strong><div style='font-size:0.9rem;color:#666;'>${r.resource_type} ${r.file_path_or_url ? '— <a href="'+r.file_path_or_url+'" target="_blank">Ver</a>' : ''}</div></div>`; const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; const vis = document.createElement('input'); vis.type='checkbox'; vis.checked = !!r.is_visible; vis.onchange = async () => { try{ const u = await apiFetch(`/course-resources/resources/${r.resource_id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ is_visible: vis.checked }) }); if(u.error) throw new Error(u.error); await showMessageModal('Listo','Visibilidad actualizada'); await loadResourcesList(); }catch(e){ console.error('Error actualizando', e); showMessageModal('Error','No fue posible actualizar'); vis.checked = !vis.checked; } }; const del = document.createElement('button'); del.className='btn btn-danger'; del.textContent='Eliminar'; del.onclick = async () => { const c = await showInputModal('Confirmar eliminación','Escribe ELIMINAR para eliminar:', ''); if(c !== 'ELIMINAR') return; try{ const d = await apiFetch(`/course-resources/resources/${r.resource_id}`, { method: 'DELETE' }); if(d.error) throw new Error(d.error); await showMessageModal('Listo','Recurso eliminado'); await loadResourcesList(); }catch(e){ console.error('Error eliminando', e); showMessageModal('Error','No fue posible eliminar recurso'); } }; right.appendChild(vis); right.appendChild(del); row.appendChild(right); list.appendChild(row); }); }catch(e){ console.error('Error cargando recursos', e); list.innerHTML = '<p>Error cargando recursos.</p>'; } }
+                try{ list.innerHTML = '<p>Cargando recursos...</p>'; const res = await apiFetch(`/course-resources/resources/assignment/${assignmentId}`); const resources = res.resources || []; if(resources.length === 0){ list.innerHTML = '<p>No hay recursos.</p>'; return; } list.innerHTML = ''; resources.forEach(r => { const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.padding='8px 0'; row.style.borderBottom='1px solid #eee'; row.innerHTML = `<div><strong>${r.title}</strong><div style='font-size:0.9rem;color:#666;'>${r.resource_type} ${r.file_path_or_url ? '— <a href="'+r.file_path_or_url+'" target="_blank">Ver</a>' : ''}</div></div>`; const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; const vis = document.createElement('input'); vis.type='checkbox'; vis.checked = !!r.is_visible; vis.onchange = async () => { try{ const u = await apiFetch(`/course-resources/resources/${r.resource_id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ is_visible: vis.checked }) }); if(u.error) throw new Error(u.error); await showMessageModal('Listo','Visibilidad actualizada'); await loadResourcesList(); }catch(e){ console.error('Error actualizando', e); showMessageModal('Error','No fue posible actualizar'); vis.checked = !vis.checked; } };
+                    const del = document.createElement('button'); del.className='btn btn-danger'; del.textContent='Eliminar'; del.onclick = async () => {
+                        console.log('profesor: delete clicked', r.resource_id);
+                        // Quick native confirm first to reduce friction
+                        let confirmed = false;
+                        try{
+                            if(confirm('¿Desea eliminar este recurso?')){ confirmed = true; }
+                            else if(typeof showInputModal === 'function'){
+                                const c = await showInputModal('Confirmar eliminación','Escribe ELIMINAR para eliminar:', '');
+                                confirmed = (c === 'ELIMINAR');
+                            }
+                        }catch(ci){ console.warn('confirm modal failed', ci); confirmed = confirm('Confirma eliminar este recurso?'); }
+                        if(!confirmed) return;
+                        try{
+                            console.log('profesor: sending DELETE', `/course-resources/resources/${r.resource_id}`);
+                            const d = await apiFetch(`/course-resources/resources/${r.resource_id}`, { method: 'DELETE' });
+                            console.log('profesor: delete response', d);
+                            if(d && d.error) throw new Error(d.error || 'Error response');
+                            // remove row immediately and show small inline notice
+                            try{ if(row && row.parentNode) row.parentNode.removeChild(row); }catch(er){ console.warn('remove row failed', er); }
+                            const info = document.createElement('div'); info.style.padding='8px'; info.style.color='green'; info.textContent = 'Recurso eliminado'; list.insertBefore(info, list.firstChild);
+                            setTimeout(() => { try{ info.parentNode && info.parentNode.removeChild(info); }catch(_){} }, 1500);
+                        }catch(e){ console.error('Error eliminando', e); try{ if(typeof showMessageModal === 'function') showMessageModal('Error','No fue posible eliminar recurso'); else alert('No fue posible eliminar recurso: ' + (e && e.message)); }catch(_){} }
+                    };
+                    right.appendChild(vis); right.appendChild(del); row.appendChild(right); list.appendChild(row); }); }catch(e){ console.error('Error cargando recursos', e); list.innerHTML = ''; } }
             loadResourcesList();
         };
         content.appendChild(manageResBtn);
 
-        // Button to jump to create-tarea with this assignment preselected
-        const createBtn = document.createElement('button'); createBtn.className = 'btn btn-primary'; createBtn.style.marginTop = '10px'; createBtn.textContent = 'Crear nueva actividad (preseleccionada)';
-        createBtn.onclick = () => { showSection('crear-tarea'); document.getElementById('tarea-curso-id').value = String(assignmentId); document.getElementById('tarea-titulo').focus(); };
+        // Button to jump to create-tarea with this assignment preselected and render activities there
+        const createBtn = document.createElement('button'); createBtn.className = 'btn btn-primary'; createBtn.style.marginTop = '10px'; createBtn.textContent = 'Ir a Gestión de Tareas';
+        createBtn.onclick = () => { showSection('crear-tarea'); document.getElementById('tarea-curso-id').value = String(assignmentId); document.getElementById('tarea-titulo').focus(); renderAssignmentActivities(assignmentId); };
         content.appendChild(createBtn);
         // Show modal-like overlay
         const overlay = document.createElement('div'); overlay.style.position='fixed'; overlay.style.inset='0'; overlay.style.background='rgba(0,0,0,0.35)'; overlay.style.display='flex'; overlay.style.alignItems='center'; overlay.style.justifyContent='center'; overlay.style.zIndex=9999;
-        const box = document.createElement('div'); box.style.background='white'; box.style.padding='18px'; box.style.borderRadius='10px'; box.style.width='700px'; box.style.maxWidth='95%'; box.appendChild(content);
+        const box = document.createElement('div'); box.style.background='white'; box.style.padding='18px'; box.style.borderRadius='10px'; box.style.width='420px'; box.style.maxWidth='95%'; box.appendChild(content);
         const close = document.createElement('button'); close.className='btn'; close.style.marginTop='12px'; close.textContent='Cerrar'; close.onclick = () => document.body.removeChild(overlay);
         box.appendChild(close);
         overlay.appendChild(box); document.body.appendChild(overlay);
-    }catch(e){ console.error('Error abriendo gestión de asignación', e); showMessageModal('Error','No se pudieron cargar las actividades'); }
+    }catch(e){ console.error('Error abriendo gestión de asignación', e); showMessageModal('Error','No se pudo mostrar opciones de gestión'); }
+}
+
+// Render activities for an assignment into the Crear Tarea tab panel
+async function renderAssignmentActivities(assignmentId){
+    try{
+        const panel = document.getElementById('assignment-activities-panel');
+        if(!panel) return;
+        panel.innerHTML = '<p>Cargando actividades...</p>';
+        const res = await apiFetch(`/assignments/assignment/${assignmentId}/activities`);
+        const activities = res.activities || [];
+        if(activities.length === 0){ panel.innerHTML = '<p>No hay actividades para esta asignación.</p>'; return; }
+        panel.innerHTML = '';
+        activities.forEach(a => {
+            const row = document.createElement('div'); row.style.padding='8px 0'; row.style.borderBottom='1px solid #eee';
+            const due = a.due_date ? new Date(a.due_date).toLocaleString() : 'Sin fecha';
+            row.innerHTML = `<strong>${a.title}</strong><div style='font-size:0.9rem;color:#666;'>Vence: ${due}</div>`;
+            const right = document.createElement('div'); right.style.marginTop='8px'; right.style.display='flex'; right.style.gap='8px';
+            const edit = document.createElement('button'); edit.className='btn'; edit.textContent='Editar'; edit.onclick = () => openEditActivityModal(a.activity_id);
+            const del = document.createElement('button'); del.className='btn btn-danger'; del.textContent='Eliminar'; del.onclick = () => confirmDeleteActivity(a.activity_id);
+            right.appendChild(edit); right.appendChild(del);
+            row.appendChild(right);
+            panel.appendChild(row);
+        });
+    }catch(e){ console.error('Error cargando actividades en panel de gestión:', e); const panel = document.getElementById('assignment-activities-panel'); if(panel) panel.innerHTML = '<p>Error cargando actividades.</p>'; }
 }
 
 async function openEditActivityModal(activityId){
@@ -716,6 +818,7 @@ Object.assign(window, {
     cargarSesiones,
     renderEntregas,
     openManageAssignment,
+    renderAssignmentActivities,
     openEditActivityModal,
     confirmDeleteActivity,
     confirmDeleteAssignment

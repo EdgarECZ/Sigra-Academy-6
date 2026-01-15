@@ -48,4 +48,28 @@ export class AlumnosModel {
         const [rows] = await db.query(`SELECT u.user_id, CONCAT(u.first_name,' ',u.last_name) AS nombre, u.email, e.enrollment_id FROM enrollments e JOIN users u ON e.student_user_id = u.user_id WHERE ${whereClauses.join(' AND ')} ${orderSql} LIMIT ? OFFSET ?`, params);
         return { message: `Se encontraron ${rows.length} estudiantes.`, total, students: rows };
     }
+
+    // List all roles and users (from check_users_roles.mjs)
+    static async listRolesAndUsers() {
+        const [roles] = await db.query(`SELECT role_id, role_name FROM roles`);
+        const [users] = await db.query(`SELECT user_id, first_name, last_name, email, role_id FROM users`);
+        return { roles, users };
+    }
+
+    // Find students by full name (from check_users_roles.mjs)
+    static async findStudentsByName(names = []) {
+        const results = {};
+        for(const name of names){
+            const [r] = await db.query(`SELECT user_id, first_name, last_name, role_id FROM users WHERE CONCAT(first_name,' ', last_name) = ?`, [name]);
+            results[name] = r.length ? r[0] : null;
+        }
+        return results;
+    }
+
+    // Report students with less than N enrollments (from check_enrollments_report.mjs)
+    static async studentsWithFewEnrollments(minEnrollments = 5) {
+        const [rows] = await db.query(`SELECT u.user_id, CONCAT(u.first_name,' ',u.last_name) AS nombre, IFNULL(e.c,0) as enroll_count FROM users u JOIN roles r ON r.role_id = u.role_id LEFT JOIN (SELECT student_user_id, COUNT(*) as c FROM enrollments GROUP BY student_user_id) e ON e.student_user_id = u.user_id WHERE LOWER(r.role_name) IN ('estudiante','student')`);
+        const lessThanN = rows.filter(r => r.enroll_count < minEnrollments);
+        return { total: rows.length, lessThanNCount: lessThanN.length, lessThanN: lessThanN };
+    }
 }

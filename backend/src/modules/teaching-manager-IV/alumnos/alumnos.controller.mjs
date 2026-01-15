@@ -102,4 +102,47 @@ export class AlumnosController {
             return res.status(500).json({ error: 'Error al obtener secciones.' });
         }
     }
+
+    /**
+     * Ensure each student is enrolled in at least perStudent sections (from ensure_enrollments.mjs)
+     * @param {number} perStudent - Minimum enrollments per student
+     * @param {boolean} dryRun - If true, only logs what would be done
+     * @returns {Promise<object>} - Summary of assignments
+     */
+    static async ensureMinimumEnrollments(perStudent = 3, dryRun = false) {
+        // Get role id for 'Estudiante' or 'student'
+        const [roles] = await AlumnosModel.db.query(`SELECT role_id FROM roles WHERE LOWER(role_name) IN ('estudiante','student') LIMIT 1`);
+        const roleId = roles[0] ? roles[0].role_id : null;
+        if(!roleId) {
+            const [allRoles] = await AlumnosModel.db.query(`SELECT role_id, role_name FROM roles`);
+            return { error: 'No se encontró rol Estudiante o student.', roles: allRoles };
+        }
+        const [students] = await AlumnosModel.db.query(`SELECT user_id FROM users WHERE role_id = ?`, [roleId]);
+        const [sections] = await AlumnosModel.db.query(`SELECT section_id FROM sections`);
+        if(sections.length === 0) return { error: 'No se encontraron secciones en la BD.' };
+        let secIdx = 0;
+        let planned = 0;
+        let assigned = 0;
+        let skipped = 0;
+        for(const s of students){
+            const userId = s.user_id;
+            const [en] = await AlumnosModel.db.query(`SELECT COUNT(*) as c FROM enrollments WHERE student_user_id = ?`, [userId]);
+            const current = en[0] ? en[0].c : 0;
+            let toAssign = perStudent - current;
+            while(toAssign > 0){
+                const sectionId = sections[secIdx % sections.length].section_id;
+                try{
+                    if(dryRun){
+                        planned++;
+                    } else {
+                        await AlumnosModel.db.query(`INSERT IGNORE INTO enrollments (student_user_id, section_id) VALUES (?, ?)`, [userId, sectionId]);
+                        assigned++;
+                    }
+                }catch(e){ skipped++; }
+                secIdx++;
+                toAssign--;
+            }
+        }
+        return { dryRun, planned, assigned, skipped, totalStudents: students.length };
+    }
 }

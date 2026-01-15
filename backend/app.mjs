@@ -1,7 +1,15 @@
 import express,{json} from "express";
 import cors from "cors";
 import morgan from "morgan";
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { SETTINGS } from "./config/settings.config.mjs";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+console.log(`Starting app.mjs — module dir: ${__dirname} ; process.cwd(): ${process.cwd()}`);
+if(process.cwd().endsWith(path.join('backend','backend'))){
+    console.warn('Warning: current working directory appears to be nested (backend/backend).\nConsider running `node app.mjs` from the backend root (../backend) or run `node scripts/rename_legacy_export_dir.mjs` to move the legacy folder.');
+}
 
 // Se inicializan el servidor express
 const app = express();
@@ -26,9 +34,10 @@ app.use(json());
 app.use(morgan("dev"));
 
 // Servir archivos subidos (entregas, recursos)
-import path from 'path';
-app.use('/uploads', express.static(path.resolve('uploads')));
+app.use('/uploads', express.static(path.resolve(__dirname, 'src', 'modules', 'teaching-manager-IV', 'uploads')));
 
+// Servir archivos de exportaciones (XLSX, CSV, etc.)
+app.use('/exports', express.static(path.resolve(__dirname, 'src', 'modules', 'teaching-manager-IV', 'exports')));
 // Servir archivos estáticos del frontend para páginas HTML, CSS y JS
 // Las rutas deben apuntar a la carpeta 'frontend' en la raíz del repo (../frontend desde /backend)
 app.use('/frontend', express.static(path.resolve('../frontend')));
@@ -64,9 +73,37 @@ app.get('/_status', async (req, res) => {
 // Iniciar servidor y registrar rutas de forma resiliente (no bloquear si DB no está lista)
 async function startServer(){
     // Start listening first so /_health responds even if route registration or DB has issues
-    const server = app.listen(SETTINGS.PORT, '0.0.0.0', () => {
+    async function listenOnAvailablePort(startPort, maxAttempts = 10){
+        let port = Number(startPort) || 3000;
+        for(let i=0;i<maxAttempts;i++){
+            try{
+                const server = await new Promise((resolve, reject) => {
+                    const s = app.listen(port, '0.0.0.0', () => resolve(s));
+                    s.on('error', (err) => reject(err));
+                });
+                return { server, port };
+            }catch(err){
+                if(err && err.code === 'EADDRINUSE'){
+                    console.warn(`Puerto ${port} en uso, intentando puerto ${port+1}...`);
+                    port = port + 1;
+                    continue;
+                }
+                throw err;
+            }
+        }
+        throw new Error(`No fue posible enlazar a ningún puerto en el rango ${startPort}-${startPort+maxAttempts-1}`);
+    }
+
+    let server, boundPort;
+    try{
+        const res = await listenOnAvailablePort(SETTINGS.PORT, 20);
+        server = res.server; boundPort = res.port;
+        SETTINGS.PORT = boundPort; // update setting to actual bound port
         console.log(`Servidor escuchando en el puerto http://0.0.0.0:${SETTINGS.PORT}`);
-    });
+    }catch(err){
+        console.error('Error en el servidor HTTP (no fue posible enlazar puertos):', err && err.stack ? err.stack : err);
+        process.exit(1);
+    }
     server.on('error', (err) => {
         console.error('Error en el servidor HTTP:', err && err.stack ? err.stack : err);
         process.exit(1);
@@ -78,6 +115,18 @@ async function startServer(){
         const { ListRoutes } = await import('./src/api/routes/api.routes.mjs');
         registerRoutes(app, ListRoutes);
         console.log('Rutas registradas correctamente.');
+        // Montajes explícitos para garantizar disponibilidad de rutas críticas
+        try{
+            const { AsignacionesRoutes } = await import('./src/modules/teaching-manager-IV/asignaciones/asignaciones.route.mjs');
+            const { AsistenciaRoutes } = await import('./src/modules/teaching-manager-IV/asistencia/asistencia.route.mjs');
+            const { AlumnosRoutes } = await import('./src/modules/teaching-manager-IV/alumnos/alumnos.route.mjs');
+            app.use(`${SETTINGS.BASE_PATH}/assignments`, AsignacionesRoutes);
+            app.use(`${SETTINGS.BASE_PATH}/attendance`, AsistenciaRoutes);
+            app.use(`${SETTINGS.BASE_PATH}/alumnos`, AlumnosRoutes);
+            console.log('Montajes explícitos de teaching-manager-IV realizados.');
+        }catch(e){
+            console.warn('No se pudieron montar rutas explícitas de teaching-manager-IV:', e && e.message ? e.message : e);
+        }
     }catch(err){
         console.error('Advertencia: fallo al registrar rutas (el servidor seguirá corriendo, pero algunas APIs pueden estar indisponibles):', err && err.stack ? err.stack : err);
     }

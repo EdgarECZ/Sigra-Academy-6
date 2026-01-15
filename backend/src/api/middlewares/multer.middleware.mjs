@@ -1,15 +1,18 @@
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Ensure upload directory exists for submissions
-const UPLOAD_ROOT = path.resolve('uploads', 'submissions');
+const UPLOAD_ROOT = path.resolve(__dirname, '..', '..', 'modules', 'teaching-manager-IV', 'uploads', 'submissions');
 if(!fs.existsSync(UPLOAD_ROOT)){
     fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
 }
 
 // Ensure upload directory exists for course resources
-const UPLOAD_ROOT_RESOURCES = path.resolve('uploads', 'resources');
+const UPLOAD_ROOT_RESOURCES = path.resolve(__dirname, '..', '..', 'modules', 'teaching-manager-IV', 'uploads', 'resources');
 if(!fs.existsSync(UPLOAD_ROOT_RESOURCES)){
     fs.mkdirSync(UPLOAD_ROOT_RESOURCES, { recursive: true });
 }
@@ -39,6 +42,8 @@ const upload = multer({
 });
 
 export const uploadSingle = (fieldName) => upload.single(fieldName);
+// Accept any file field (useful to be tolerant with client field names)
+export const uploadAny = () => upload.any();
 export const UPLOAD_ROOT_PATH = UPLOAD_ROOT;
 export const UPLOAD_ROOT_RESOURCES_PATH = UPLOAD_ROOT_RESOURCES;
 

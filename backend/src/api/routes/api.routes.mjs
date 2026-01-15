@@ -12,6 +12,7 @@ import { AsignacionesRoutes } from "../../modules/teaching-manager-IV/asignacion
 import { AlumnosRoutes } from "../../modules/teaching-manager-IV/alumnos/alumnos.route.mjs";
 import { AsistenciaRoutes } from "../../modules/teaching-manager-IV/asistencia/asistencia.route.mjs";
 import { NotificationsRoutes } from "../notifications/notifications.route.mjs";
+import { CourseResourcesRoutes } from "../../modules/teaching-manager-IV/course-resources/course_resources.route.mjs";
 
 const router = Router();
 
@@ -35,7 +36,7 @@ export const ListRoutes = {
         asignaciones: router.use(`${SETTINGS.BASE_PATH}/assignments`, AsignacionesRoutes),
         alumnos: router.use(`${SETTINGS.BASE_PATH}/alumnos`, AlumnosRoutes),
         asistencia: router.use(`${SETTINGS.BASE_PATH}/attendance`, AsistenciaRoutes),
-        courseResources: router.use(`${SETTINGS.BASE_PATH}/course-resources`, (await import('../../modules/teaching-manager-IV/course-resources/course_resources.route.mjs')).CourseResourcesRoutes)
+        courseResources: router.use(`${SETTINGS.BASE_PATH}/course-resources`, CourseResourcesRoutes)
     },
     notifications: {
         notifications: router.use(`${SETTINGS.BASE_PATH}/notifications`, NotificationsRoutes)

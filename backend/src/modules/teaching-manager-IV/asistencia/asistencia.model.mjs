@@ -82,6 +82,38 @@ export class AsistenciaModel {
         return { session: rows[0] };
     }
 
+    // Check if attendance tables exist (from check_attendance_tables.mjs)
+    static async checkAttendanceTables() {
+        try {
+            const [s] = await db.query(`SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name IN ('attendance_sessions','attendance_records')`);
+            return { foundTables: s.map(r => r.table_name ?? r.TABLE_NAME ?? Object.values(r)[0]) };
+        } catch (e) {
+            return { error: 'Error checking tables', details: e };
+        }
+    }
+
+    // Export attendance session as XLSX (from test_attendance_exports.mjs, export logic only)
+    static async exportSessionXLSX(sessionId) {
+        const ExcelJS = (await import('exceljs')).default;
+        const [sessionRows] = await db.query(`SELECT * FROM attendance_sessions WHERE session_id = ?`, [sessionId]);
+        if (!sessionRows.length) return { error: 'Session not found' };
+        const [records] = await db.query(`SELECT ar.*, CONCAT(u.first_name,' ',u.last_name) AS student_name FROM attendance_records ar JOIN users u ON ar.student_user_id = u.user_id WHERE ar.session_id = ?`, [sessionId]);
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Asistencia');
+        sheet.columns = [
+            { header: 'RecordID', key: 'record_id', width: 12 },
+            { header: 'Alumno ID', key: 'student_user_id', width: 12 },
+            { header: 'Alumno', key: 'student_name', width: 30 },
+            { header: 'Estado', key: 'status', width: 12 },
+            { header: 'Marcado En', key: 'marked_at', width: 24 },
+        ];
+        records.forEach(r => sheet.addRow({ record_id: r.record_id, student_user_id: r.student_user_id, student_name: r.student_name, status: r.status, marked_at: r.marked_at }));
+        sheet.getRow(1).font = { bold: true };
+        sheet.autoFilter = 'A1:E1';
+        const buffer = await workbook.xlsx.writeBuffer();
+        return { buffer, session: sessionRows[0], records };
+    }
+
     static async getRecords(sessionId){
         if(!sessionId) return { error: 'No se proporcionó el ID de la sesión.' };
         const [rows] = await db.query(`SELECT ar.*, CONCAT(u.first_name,' ',u.last_name) AS student_name FROM attendance_records ar JOIN users u ON ar.student_user_id = u.user_id WHERE ar.session_id = ?`, [sessionId]);
