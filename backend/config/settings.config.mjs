@@ -1,10 +1,5 @@
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Load .env relative to this config file to avoid issues when working directory differs
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config();
 
 // Configuraciones generales
 export const SETTINGS = {
