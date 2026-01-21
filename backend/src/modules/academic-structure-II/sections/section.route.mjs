@@ -7,7 +7,10 @@ const sectionController = new SectionController({ModelSection: SectionModel});
 
 // Rutas relacionadas con las secciones académicas
 // Ruta para obtener todas las secciones académicas
+// Ruta para obtener todas las secciones académicas
 router.get('/all', sectionController.getAllSections);
+// También exponer GET / para listar secciones
+router.get('/', sectionController.getAllSections);
 // Ruta para obtener una sección académica por su ID
 router.get('/section/:sectionId', sectionController.getSectionById);
 // Ruta para crear una nueva sección académica

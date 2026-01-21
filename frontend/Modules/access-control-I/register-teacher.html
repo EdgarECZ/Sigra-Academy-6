@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Inscripción de Profesor - SIGRA</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#002F87",
+                        "background-light": "#F3F4F6",
+                        "background-dark": "#111827",
+                        "card-light": "#FFFFFF",
+                        "card-dark": "#1F2937",
+                        "text-main-light": "#1F2937",
+                        "text-main-dark": "#F9FAFB",
+                        "text-sub-light": "#6B7280",
+                        "text-sub-dark": "#9CA3AF",
+                        "nav-gray": "#64748B",
+                        "success": "#10B981",
+                        "error": "#C52B3D",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark transition-colors duration-200 min-h-screen relative pb-20">
+    <header class="sticky top-0 z-50 bg-white dark:bg-background-dark border-b border-gray-200 dark:border-gray-800 px-8 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="size-10 flex items-center justify-center">
+                    <img src="../academic-structure-II/assets/logo.png" alt="Logo de la escuela" class="w-full h-full object-contain" />
+                </div>
+                <h2 class="text-primary text-2xl font-black tracking-tight">SIGRA</h2>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <nav class="hidden md:flex items-center gap-6">
+                    <a class="text-nav-gray hover:text-primary text-base font-medium transition-colors" href="#">Inicio</a>
+                    <a class="text-nav-gray hover:text-primary text-base font-medium transition-colors" href="#">Usuarios</a>
+                    <a class="text-nav-gray hover:text-primary text-base font-medium transition-colors" href="../academic-structure-II/index.html">
+                        Nueva Inscripción
+                    </a>
+                    <a class="text-nav-gray hover:text-primary text-base font-medium transition-colors" href="../academic-structure-II/gestionar-asignacion.html">
+                        Gestión de Asignación
+                    </a>
+                    <a class="text-nav-gray hover:text-primary text-base font-medium transition-colors" href="#">Reportes</a>
+                </nav>
+
+                <div class="flex items-center gap-4">
+                    <button class="size-10 flex items-center justify-center rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors">
+                        <span class="material-icons">notifications</span>
+                    </button>
+                    <div class="size-10 rounded-full bg-gray-200 overflow-hidden border-2 border-transparent hover:border-primary transition-all cursor-pointer">
+                        <img alt="Profile avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADIAQNBOIhz8AgCJ4DVy8EvGEOtmBnmnGZ0YuFkSgoGk3FsiRM7HvL-ZsWuROht5F95KmOr4EbF94VN9LevPicOwahD_k-7hSMKTiXTGkglji04V35VjTZt7DdBYZKI0p6hd_kbx4ZOrwcGPwBE-OKjtSX7S0eMpvLRrwNIENK3l1MTGCEC-U-2NQFD7qBGimKZP7-iCg6Via2oOS3gcIWYoNGw2qTpJN9RW3LvyyM2KDfOo--lJGH043TvsKdYBlWavR6R87PamfY" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="sm:flex sm:items-center sm:justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold leading-tight text-text-main-light dark:text-text-main-dark">Inscripción</h1>
+                <p class="mt-2 text-sm text-primary font-medium">Registro / Crear asignación de profesor</p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex items-center bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+                <button class="relative bg-white dark:bg-gray-600 shadow-sm rounded-md py-1.5 px-4 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-primary" type="button">Estudiantes</button>
+                <button class="ml-0.5 relative border border-transparent rounded-md py-1.5 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:z-10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-primary" type="button">Profesores</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-250px)] min-h-[600px]">
+            <div class="bg-card-light dark:bg-card-dark shadow-sm rounded-xl flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 p-6">
+                <h2 class="text-lg font-bold mb-4">Crear Asignación para Profesor</h2>
+                <form id="assignForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold">ID del Profesor</label>
+                        <div class="flex gap-2 mt-2">
+                            <input id="teacherId" type="number" class="border rounded px-3 py-2 flex-1" placeholder="Ingrese user_id" />
+                            <button id="btnFetchTeacher" type="button" class="px-4 py-2 bg-blue-600 text-white rounded">Buscar</button>
+                        </div>
+                        <p id="teacherInfo" class="text-sm text-gray-600 mt-2"></p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold">Materia</label>
+                        <select id="subjectSelect" class="w-full border rounded px-3 py-2 mt-2"></select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold">Sección</label>
+                        <select id="sectionSelect" class="w-full border rounded px-3 py-2 mt-2"></select>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3">
+                        <button type="button" id="btnCancel" class="px-4 py-2 border rounded">Cancelar</button>
+                        <button type="submit" id="btnSubmit" class="px-4 py-2 bg-green-600 text-white rounded">Crear Asignación</button>
+                    </div>
+
+                    <div id="message" class="text-sm mt-2"></div>
+                </form>
+            </div>
+
+            <div class="bg-card-light dark:bg-card-dark shadow-sm rounded-xl flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 p-6">
+                <h2 class="text-lg font-bold mb-4">Materias y Secciones Disponibles</h2>
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <h3 class="text-sm font-semibold mb-2">Materias</h3>
+                        <div id="availableSubjects" class="max-h-48 overflow-y-auto p-2 space-y-2 hide-scrollbar"></div>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold mb-2">Secciones</h3>
+                        <div id="availableSections" class="max-h-48 overflow-y-auto p-2 space-y-2 hide-scrollbar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="js/register-teacher.js" defer></script>
+</body>
+
+</html>

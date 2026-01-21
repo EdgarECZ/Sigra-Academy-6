@@ -7,7 +7,10 @@ const router = Router()
 const controller = new subjectController({ subjectModel: subjectModel })
 
 // Ruta para obtener todas las materias
+// Ruta para obtener todas las materias
 router.get("/all", controller.getAllSubjects)
+// También permitir GET / to listar materias (comodidad)
+router.get("/", controller.getAllSubjects)
 // Ruta para obtener una materia por su ID
 router.get("/subject/:subjectId", controller.getSubjectById)
 // Ruta para crear una materia

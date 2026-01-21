@@ -1,4 +1,6 @@
 // Controlador de asignaciones de profesor para módulo 1 (access control)
+import { validateCreateAssignment } from './teacher-assignment.schema.mjs'
+
 export class TeacherAssignmentAccessController {
   constructor({ model }) {
     this.model = model
@@ -24,6 +26,20 @@ export class TeacherAssignmentAccessController {
       return res.status(200).json({ message: result.message, assignments: result.assignments })
     } catch (error) {
       return res.status(500).json({ error: `Error obteniendo asignaciones del profesor: ${error.message}` })
+    }
+  }
+
+  // POST /teacher-assignments
+  create = async (req, res) => {
+    try {
+      const validation = validateCreateAssignment(req.body)
+      if(!validation.success) return res.status(400).json({ error: 'Datos inválidos', details: validation.error })
+      const data = validation.data
+      const result = await this.model.create(data)
+      if (result.error) return res.status(400).json({ error: result.error })
+      return res.status(201).json({ message: result.message, assignment: result.assignment })
+    } catch (error) {
+      return res.status(500).json({ error: `Error creando asignación: ${error.message}` })
     }
   }
 }
