@@ -41,26 +41,44 @@
             </section>
 
             <aside class="submission-section">
-              <div class="card-modern submission-card">
-                  <div class="submission-header">
-                      <h2 class="section-title">Tu trabajo</h2>
-                      <span id="submission-status" class="status-badge pending">Pendiente</span>
-                  </div>
+                <div class="card-modern submission-card">
+                    <div class="submission-header">
+                        <h2 class="section-title">Tu trabajo</h2>
+                        <span id="submission-status" class="status-badge pending">Pendiente</span>
+                    </div>
 
-                  <div id="drop-zone" class="upload-area">
-                      <div class="upload-icon-container">
-                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                      </div>
-                      <p class="upload-text">Arrastra tu archivo o <strong>haz clic aquí</strong></p>
-                      <input type="file" id="file-input" hidden>
-                  </div>
+                    <!-- Contenedor de Calificación -->
+                    <div id="grade-display-container" class="grade-container" style="display: none;">
+                        <div class="grade-box">
+                            <span class="grade-label">Calificación Final</span>
+                            <div class="grade-value-wrapper">
+                                <span id="grade-score" class="grade-score">--</span>
+                                <span class="grade-max">/20</span>
+                            </div>
+                            <span id="grade-status-text" class="grade-status-tag">Sin evaluar</span>
+                        </div>
+                        
+                        <!-- Campo de Feedback -->
+                        <div id="feedback-container" class="feedback-box" style="display: none;">
+                            <strong>Comentario del docente:</strong>
+                            <p id="grade-feedback"></p>
+                        </div>
+                    </div>
 
-                  <div id="file-list" class="file-preview-list">
-                  </div>
+                    <div id="drop-zone" class="upload-area">
+                        <div class="upload-icon-container">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        </div>
+                        <p class="upload-text">Arrastra tu archivo o <strong>haz clic aquí</strong></p>
+                        <input type="file" id="file-input" hidden>
+                    </div>
 
-                  <button id="btn-submit" class="primary-btn" disabled>
-                      Entregar tarea
-                  </button>
+                    <div id="file-list" class="file-preview-list">
+                </div>
+
+                <button id="btn-submit" class="primary-btn" disabled>
+                    Entregar tarea
+                </button>
               </div>
           </aside>
         </div>

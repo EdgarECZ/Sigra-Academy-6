@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SIGRA | Gestión de Usuarios</title>
   <link rel="stylesheet" href="user-table.css" />
 </head>
+
 <body>
   <!-- Navbar superior -->
   <header>
@@ -20,8 +22,9 @@
         <a href="../academic-structure-II/catalogo-materias/index.html" role="listitem">Catalogo</a>
         <a href="../academic-structure-II/gestion-materias/index.html" role="listitem">Materias</a>
         <a href="../academic-structure-II/definicion-prelaciones/index.html" role="listitem">Prelaciones</a>
-        <a href="../academic-structure-II/index.html" role="listitem"> Inscripción</a> 
-        <a href="../academic-structure-II/gestionar-asignacion.html" role="listitem">Asignacion</a>
+        <a href="../academic-structure-II/Gestionar Asignaciones/index.html" role="listitem"> Inscripción</a>
+        <a href="../academic-structure-II/Gestionar Asignaciones/gestionar-asignacion.html"
+          role="listitem">Asignacion</a>
       </div>
 
       <div class="profile-menu" aria-label="Menú de perfil">
@@ -32,9 +35,12 @@
         <div class="profile-dropdown" id="profile-dropdown" role="menu">
           <ul class="profile-list" role="menu">
             <li class="profile-info" id="profile-info-name" role="presentation">Usuario</li>
-            <li role="none"><button type="button" class="profile-item" data-profile-action="create" role="menuitem">Crear usuario</button></li>
-            <li role="none"><button type="button" class="profile-item" data-profile-action="edit" role="menuitem">Editar usuario</button></li>
-            <li role="none"><button type="button" class="profile-item" data-profile-action="logout" role="menuitem">Cerrar sesión</button></li>
+            <li role="none"><button type="button" class="profile-item" data-profile-action="create"
+                role="menuitem">Crear usuario</button></li>
+            <li role="none"><button type="button" class="profile-item" data-profile-action="edit" role="menuitem">Editar
+                usuario</button></li>
+            <li role="none"><button type="button" class="profile-item" data-profile-action="logout"
+                role="menuitem">Cerrar sesión</button></li>
           </ul>
         </div>
       </div>
@@ -324,11 +330,11 @@
         const name = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : ''
         const initials = name
           ? name
-              .split(' ')
-              .filter(Boolean)
-              .slice(0, 2)
-              .map((part) => part[0].toUpperCase())
-              .join('')
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0].toUpperCase())
+            .join('')
           : '--'
         if (profileAvatar) profileAvatar.textContent = initials || '--'
         if (profileInfoName) profileInfoName.textContent = name || 'Usuario'
@@ -565,4 +571,5 @@
     </div>
   </div>
 </body>
+
 </html>

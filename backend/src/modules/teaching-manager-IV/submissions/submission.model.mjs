@@ -62,12 +62,15 @@ export class SubmissionModel {
         if (existingUser.length === 0) return { error: 'El estudiante no existe' };
         // Si existe, se obtienen las entregas asociadas
         const [submissions] = await db.query(
-            `SELECT sub.*, act.title, sec.section_name, g.grade_name FROM submissions sub
-            JOIN activities act ON sub.activity_id = act.activity_id
-            JOIN teacher_assignments ta ON act.assignment_id = ta.assignment_id
-            JOIN sections sec ON ta.section_id = sec.section_id
-            JOIN grades g ON sec.grade_id = g.grade_id
-            WHERE sub.student_user_id = ?`,
+            `SELECT sub.*, act.title, sec.section_name, g.grade_name, gl.score, gl.feedback 
+                FROM submissions sub
+                JOIN activities act ON sub.activity_id = act.activity_id
+                JOIN teacher_assignments ta ON act.assignment_id = ta.assignment_id
+                JOIN sections sec ON ta.section_id = sec.section_id
+                JOIN grades g ON sec.grade_id = g.grade_id
+                LEFT JOIN grades_log gl ON gl.activity_id = sub.activity_id 
+                AND gl.student_user_id = sub.student_user_id
+             WHERE sub.student_user_id = ?`,
             [studentUserId]
         );
         if (submissions.length === 0) return { error: 'No hay entregas para este estudiante' };

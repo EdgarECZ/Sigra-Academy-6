@@ -4,18 +4,32 @@ const STUDENT_ID = 3;
 const dayOrder = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 const stepMinutes = 30; // intervalo de 30 minutos para el grid
 
-// Mapear asignaturas a clases de color existentes en el CSS
+// Mapear asignaturas a clases de color (Claves en minúsculas y sin acentos para mejor matching)
 const colorMap = {
-    'Matemáticas I': 'matematicas',
-    'Matemáticas III': 'matematicas',
-    'Matemáticas': 'matematicas',
-    'Biología': 'biologia',
-    'Ciencias Naturales I': 'biologia',
-    'Ciencias Sociales': 'castellano',
-    'Historia y Geografía': 'castellano',
-    'Física': 'fisica',
-    'Química': 'quimica',
-    'Castellano': 'castellano'
+    'matematica': 'matematicas',
+    'matematicas': 'matematicas',
+    'matematica i': 'matematicas',
+    'matematica iii': 'matematicas',
+    'biologia': 'biologia',
+    'ciencias naturales': 'biologia',
+    'ciencias sociales': 'castellano',
+    'historia': 'castellano',
+    'geografia': 'castellano',
+    'fisica': 'fisica',
+    'quimica': 'quimica',
+    'castellano': 'castellano',
+    'lenguaje': 'castellano',
+    'literatura': 'castellano',
+    'computacion': 'computacion',
+    'ingles': 'quimica' 
+};
+
+// Función para quitar acentos y normalizar texto
+const cleanText = (text) => {
+    return text ? text.toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim() : '';
 };
 
 const normalizeDay = (day) => {
@@ -55,7 +69,6 @@ async function loadSchedule() {
 }
 
 function buildScheduleDataFromAPI(entries) {
-    // Normalizar días y obtener rangos de tiempo
     const normalized = entries.map(e => ({
         ...e,
         day_of_week: normalizeDay(e.day_of_week)
@@ -66,7 +79,6 @@ function buildScheduleDataFromAPI(entries) {
     const minStart = Math.min(...normalized.map(e => timeToMinutes(e.start_time.slice(0,5))));
     const maxEnd = Math.max(...normalized.map(e => timeToMinutes(e.end_time.slice(0,5))));
 
-    // Generar slots en pasos de 30 minutos
     const times = [];
     for (let m = minStart; m <= maxEnd; m += stepMinutes) {
         times.push(minutesToLabel(m));
@@ -80,11 +92,15 @@ function buildScheduleDataFromAPI(entries) {
         const endMin = timeToMinutes(e.end_time.slice(0,5));
         const span = Math.max(1, Math.ceil((endMin - startMin) / stepMinutes));
         const startLabel = minutesToLabel(startMin);
-        const color = colorMap[e.subject_name] || 'matematicas';
+        
+        // BUSQUEDA DE COLOR MEJORADA
+        const subjectClean = cleanText(e.subject_name);
+        const colorKey = Object.keys(colorMap).find(key => subjectClean.includes(key));
+        const color = colorKey ? colorMap[colorKey] : 'materia-default';
 
         classes[e.day_of_week][startLabel] = {
             name: e.subject_name,
-            room: e.classroom || '',
+            room: e.classroom || 'Aula TBD',
             span,
             color
         };
@@ -108,7 +124,6 @@ function buildGrid(scheduleData) {
     const grid = document.createElement('div');
     grid.className = 'schedule-grid';
 
-    // Header
     const header = document.createElement('div');
     header.className = 'schedule-header';
 
@@ -138,7 +153,6 @@ function buildGrid(scheduleData) {
             const classCell = document.createElement('div');
             classCell.className = 'class-cell';
 
-            // Si la celda está ocupada por un bloque que abarca varias filas, ocultamos bordes
             if (occupiedCells[cellKey]) {
                 classCell.classList.add('spanned-cell');
                 grid.appendChild(classCell);
@@ -165,6 +179,7 @@ function buildGrid(scheduleData) {
 
                 if (classInfo.span > 1) {
                     classBlock.style.bottom = `calc(-100% * ${classInfo.span - 1} + ${(classInfo.span - 1) * 4}px)`;
+                    classBlock.style.zIndex = "10";
                     for (let i = 1; i < classInfo.span; i++) {
                         occupiedCells[`${dayIndex}-${timeIndex + i}`] = true;
                     }
