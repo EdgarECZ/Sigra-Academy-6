@@ -87,6 +87,65 @@ header {
   align-items: center;
 }
 
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  padding: 10px 12px;
+  min-width: 190px;
+  display: none;
+  z-index: 10;
+}
+
+.profile-dropdown.open {
+  display: block;
+}
+
+.profile-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-info {
+  font-weight: 700;
+  color: var(--text);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+  list-style: none;
+}
+
+.profile-item {
+  width: 100%;
+  text-align: left;
+  background: #f9fafb;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.profile-item:hover {
+  background: var(--badge);
+  border-color: #d1d5db;
+}
+
+.profile-item:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 .profile-button {
   display: inline-flex;
   align-items: center;
@@ -159,17 +218,31 @@ header {
   text-decoration: none;
   border-radius: 4px;
   font-weight: 500;
+  margin-left: 60px;
+  margin-top: 20px;
   transition: background-color 0.2s ease;
 }
 
-/* place back-button to the right of the logo inside the navbar */
-.navbar .back-button {
-  margin-left: 12px;
-  align-self: center;
+.page .back-button {
+  left: 20px;
+  top: 20px;
+  display: inline-flex;
+  gap: 8px;
+  padding: 8px 14px;
+  z-index: 9999;
+  border-radius: 7px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+/* Mover el contenido de la página 10px hacia arriba */
+.page {
+  margin-top: -60px;
 }
 
 @media (max-width: 600px) {
-  .navbar .back-button {
+  .page .back-button {
+    left: 8px;
+    top: 84px;
     padding: 6px 10px;
     font-size: 0.9rem;
   }
