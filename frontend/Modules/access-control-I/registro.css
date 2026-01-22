@@ -218,23 +218,25 @@ header {
   text-decoration: none;
   border-radius: 4px;
   font-weight: 500;
+  margin-left: 60px;
+  margin-top: 20px;
   transition: background-color 0.2s ease;
 }
 
-
-
-
-
 .page .back-button {
-  position: fixed;
-  left: 80px;
-
-  top: 110px;
-  display: inline-block;
+  left: 20px;
+  top: 20px;
+  display: inline-flex;
+  gap: 8px;
   padding: 8px 14px;
   z-index: 9999;
-  /* fully rounded (pill) */
   border-radius: 7px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+/* Mover el contenido de la página 10px hacia arriba */
+.page {
+  margin-top: -60px;
 }
 
 @media (max-width: 600px) {
