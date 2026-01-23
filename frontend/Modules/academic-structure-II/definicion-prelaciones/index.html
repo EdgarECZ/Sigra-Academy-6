@@ -11,6 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -108,13 +109,21 @@
 
                 <div class="form-group">
                     <label>1. Seleccionar Materia Principal</label>
-                    <div class="search-input-group">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="materia-search"
-                            placeholder="Buscar por código o nombre (ej. MAT-204, Matematica I)" list="materias-list">
-                        <datalist id="materias-list">
-                            <!-- Se llenará dinámicamente desde la base de datos -->
-                        </datalist>
+                    <div class="autocomplete-wrapper">
+                        <div class="search-input-group">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="materia-search"
+                                placeholder="Buscar por código o nombre (ej. MAT-204, Matematica I)" autocomplete="off">
+                        </div>
+                        <div class="autocomplete-dropdown" id="autocomplete-dropdown">
+                            <div class="autocomplete-header">
+                                <i class="fa-solid fa-book"></i>
+                                Materias Disponibles
+                            </div>
+                            <div id="autocomplete-results">
+                                <!-- Los resultados se cargarán dinámicamente -->
+                            </div>
+                        </div>
                     </div>
 
                     <div class="selected-item" id="selected-materia-container" style="display: none;">
