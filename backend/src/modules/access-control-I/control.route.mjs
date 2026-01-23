@@ -10,6 +10,8 @@ const controller = new ControlController({ ModelControl: UserModel });
 router.get('/users', controller.getAllUsers);
 // Ruta para obtener un usuario por su ID
 router.get('/user/:userId', controller.getUserById);
+// Ruta para obtener todos los usuarios que sean estudiantes
+router.get('/students', controller.getAllStudents);
 // Ruta para obtener un usuario por su email
 router.get('/email/:email', controller.getUserByEmail);
 // Ruta para crear un nuevo usuario

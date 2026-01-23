@@ -22,6 +22,21 @@ export class ControlController {
 		}
 	}
 
+	// Controlador para obtener todos los usuarios que sean estudiantes
+	getAllStudents = async (req, res) => {
+		try{
+			const result = await this.model.getAllStudents();
+			if(result.error) return res.status(404).json({error: result.error});
+			return res.status(200).json({
+				message: result.message,
+				students: result.students
+			});
+		}
+		catch(error){
+			return res.status(500).json({error: 'Error del servidor'});
+		}
+	}
+
 	// Controlador para obtener un usuario por su ID
 	getUserById = async (req, res) => {
 		const { userId } = req.params;

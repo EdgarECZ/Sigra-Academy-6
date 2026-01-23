@@ -2,6 +2,23 @@ import {db} from '../../../../database/db.database.mjs';
 
 // Modelo que interactua con la tabla activities de la base de datos
 export class ActivitiesModel {
+    
+    // Método para obtener todas las actividades
+    static async getAllActivities(){
+        const [activities] = await db.query(
+            `SELECT act.*, s.subject_name, sec.section_name, CONCAT(t.first_name, ' ', t.last_name) AS teacher_name
+            FROM activities act JOIN teacher_assignments ta ON act.assignment_id = ta.assignment_id
+            JOIN subjects s ON ta.subject_id = s.subject_id
+            JOIN sections sec ON ta.section_id = sec.section_id
+            JOIN users t ON ta.teacher_user_id = t.user_id`
+        );
+        if(activities.length === 0) return {message: 'No hay actividades disponibles'};
+        return {
+            message: 'Actividades obtenidas exitosamente',
+            activities: activities
+        }
+    }
+
     // Método para obtener todas las actividades de un curso especifico
     static async getActivitiesByAssignment(assignmentId){
         if(!assignmentId) return {error: 'El ID de la asignación es requerido'};
@@ -27,6 +44,34 @@ export class ActivitiesModel {
             activities: activities
         }
     }
+
+        // Método para obtener todas las actividades relacionadas con una materia (subject)
+        static async getActivitiesBySubject(subjectId){
+            if(!subjectId) return {error: 'El ID de la materia es requerido'};
+            // Se obtienen las assignment_id asociados a la materia desde teacher_assignments
+            const [assignments] = await db.query(
+                `SELECT assignment_id FROM teacher_assignments WHERE subject_id = ?`,
+                [subjectId]
+            );
+            if(assignments.length === 0) return {message: 'No hay asignaciones para esta materia', activities: []};
+            const assignmentIds = assignments.map(a => a.assignment_id);
+            // Construir placeholders para IN (? , ?)
+            const placeholders = assignmentIds.map(() => '?').join(',');
+            const [activities] = await db.query(
+                `SELECT act.*, s.subject_name, sec.section_name, CONCAT(t.first_name, ' ', t.last_name) AS teacher_name
+                FROM activities act JOIN teacher_assignments ta ON act.assignment_id = ta.assignment_id
+                JOIN subjects s ON ta.subject_id = s.subject_id
+                JOIN sections sec ON ta.section_id = sec.section_id
+                JOIN users t ON ta.teacher_user_id = t.user_id
+                WHERE act.assignment_id IN (${placeholders})`,
+                assignmentIds
+            );
+            if(activities.length === 0) return {message: 'No hay actividades para esta materia', activities: []};
+            return {
+                message: `Se encontraron ${activities.length} actividades para la materia ${subjectId}`,
+                activities: activities
+            }
+        }
 
     // Método para obtener una actividad por su ID
     static async getActivityById(activityId){

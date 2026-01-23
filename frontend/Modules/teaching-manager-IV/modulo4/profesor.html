@@ -16,7 +16,7 @@
         </div>
         <div class="nav-links">
             <a href="#" onclick="showSection('inicio')" class="active">Inicio</a>
-            <a href="#" onclick="showSection('mis-cursos')">Mis Cursos</a>
+            <a href="#" onclick="showSection('mi-curso')">Mi Curso</a>
             <a href="#" onclick="showSection('alumnos')">Alumnos</a>
             <a href="#" onclick="showSection('crear-tarea')">Gestión Tareas</a>
             <a href="#" onclick="showSection('tareas-recibidas')">Calificar</a>
@@ -24,6 +24,9 @@
         </div>
         <div class="user-profile">
             <span id="prof-user-name">Cargando...</span>
+            <button onclick="cerrarSesion()" class="btn-logout" title="Cerrar Sesión">
+            <i class="fas fa-sign-out-alt"></i> Salir
+            </button>
         </div>
     </nav>
 
@@ -33,9 +36,9 @@
             <h2>Bienvenido, Profesor</h2>
             <p>Seleccione una opción para gestionar sus actividades académicas.</p>
             <div class="card-grid">
-                <div class="card" onclick="showSection('mis-cursos')" style="cursor:pointer">
-                    <h3><i class="fas fa-book"></i> Mis Cursos</h3>
-                    <p>Ver asignaturas asignadas.</p>
+                <div class="card" onclick="showSection('mi-curso')" style="cursor:pointer">
+                    <h3><i class="fas fa-book"></i> Mi Curso</h3>
+                    <p>Ver Material del curso.</p>
                 </div>
                 <div class="card" onclick="showSection('alumnos')" style="cursor:pointer">
                     <h3><i class="fas fa-users"></i> Listado Alumnos</h3>
@@ -52,11 +55,23 @@
             </div>
         </section>
 
-        <section id="mis-cursos" class="view-section">
-            <h2><i class="fas fa-chalkboard"></i> Mis Asignaturas</h2>
-            <div id="lista-cursos-profesor" class="card-grid">
-                </div>
-        </section>
+        <section id="mi-curso" class="view-section">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h2><i class="fas fa-archive"></i> Repositorio de Material</h2>
+            <p style="color: #666; font-size: 0.9em;">Guías, lecturas y recursos para los alumnos.</p>
+        </div>
+        <button class="btn-primario" onclick="abrirModalRecurso()" style="background: #123E6A; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
+            <i class="fas fa-upload"></i> Subir Material
+        </button>
+    </div>
+
+    <div id="repo-material-apoyo" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        <div id="lista-recursos" class="recursos-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+            <p style="text-align: center; color: #999;">Cargando biblioteca de recursos...</p>
+        </div>
+    </div>
+</section>
 
         <section id="alumnos" class="view-section">
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -67,12 +82,6 @@
             </div>
             
             <div class="form-group" style="margin-top:15px; display:flex; gap:10px; align-items:end;">
-                <div style="flex:1">
-                    <label>Seleccionar Curso / Sección:</label>
-                    <select id="filtro-curso-alumnos" class="form-control" onchange="cargarAlumnos()">
-                        <option value="">Seleccione...</option>
-                    </select>
-                </div>
                 <div style="width:250px">
                     <label>Búsqueda</label>
                     <input id="alumnos-search" class="form-control" placeholder="Nombre o email" oninput="debouncedCargarAlumnos()" />
@@ -96,13 +105,13 @@
             <table id="tabla-alumnos">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Sección</th>
-                        <th>Acciones</th>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Sección</th>
+                    <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody id="lista-alumnos-body"> </tbody>
             </table>
 
             <!-- Pagination controls -->
@@ -129,10 +138,6 @@
             <h2><i class="fas fa-edit"></i> Crear Nueva Tarea</h2>
             <div class="card">
                 <form id="form-crear-tarea">
-                    <div class="form-group">
-                        <label>Asignatura y Sección</label>
-                        <select id="tarea-curso-id" class="form-control" required></select>
-                    </div>
                     <div class="form-group">
                         <label>Título de la Tarea</label>
                         <input type="text" id="tarea-titulo" class="form-control" required>
@@ -182,60 +187,48 @@
         </section>
 
         <section id="asistencia" class="view-section">
-            <h2><i class="fas fa-clock"></i> Gestión de Asistencia</h2>
-            <div class="card">
-                <h3>Nueva Sesión de Asistencia</h3>
-                <form id="form-crear-asistencia">
-                    <div class="form-group">
-                        <label>Curso</label>
-                        <select id="asistencia-curso-id" class="form-control"></select>
-                    </div>
-                    <div class="form-group" style="display:flex; gap:10px;">
-                        <div style="flex:1">
-                            <label>Número de Semana</label>
-                            <input type="number" id="asistencia-week" class="form-control" min="1" placeholder="Ej: 1">
-                        </div>
-                        <div style="flex:1">
-                            <label>Fecha Apertura</label>
-                            <input type="datetime-local" id="asistencia-open" class="form-control">
-                        </div>
-                        <div style="flex:1">
-                            <label>Fecha Límite</label>
-                            <input type="datetime-local" id="asistencia-close" class="form-control">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Crear Sesión</button>
-                </form>
-
-                <!-- Session controls -->
-                <div id="session-controls" style="margin-top:15px; display:none;">
-                    <h4 id="session-info">Asistencia creada correctamente.</h4>
-                    <button id="btn-export-session" class="btn btn-success" onclick="exportSessionCSV()" style="display:none;"><i class="fas fa-file-excel"></i> Exportar Sesión</button>
-                </div>
-
-                <!-- Lista de sesiones -->
-                <div id="sesiones-list" style="margin-top:12px;">
-                    <!-- Aquí se mostrarán las sesiones registradas para la sección -->
-                </div>
+    <h2><i class="fas fa-calendar-check"></i> Registro de Accesos</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Alumno</th>
+                <th>Materia</th>
+                <th>Último Acceso</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody id="lista-asistencia-body">
+            </tbody>
+    </table>
+</section>
+<div id="modal-recurso" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div class="modal-content" style="background:white; padding:25px; border-radius:12px; width:400px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0;"><i class="fas fa-cloud-upload-alt"></i> Nuevo Material</h3>
+        <form id="form-nuevo-recurso">
+            <div style="margin-bottom:15px;">
+                <label>Título del Material:</label>
+                <input type="text" id="res-title" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
             </div>
-            
-            <!-- Session summary will be injected here when a session is selected -->
-            <div id="session-summary-above-table" style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
-                <!-- populated dynamically -->
+            <div style="margin-bottom:15px;">
+                <label>Tipo de Recurso:</label>
+                <select id="res-type" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="PDF">Documento PDF</option>
+                    <option value="Video">Video / Multimedia</option>
+                    <option value="Link">Enlace Externo</option>
+                    <option value="Slide">Presentación</option>
+                </select>
             </div>
-
-            <table id="tabla-reporte-asistencia">
-                <thead>
-                    <tr>
-                        <th>Estudiante</th>
-                        <th>Estado</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </section>
-
+            <div style="margin-bottom:20px;">
+                <label>Seleccionar Archivo:</label>
+                <input type="file" id="res-file" name="file" style="width:100%;">
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" onclick="cerrarModalRecurso()" style="background:#eee; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">Cancelar</button>
+                <button type="submit" style="background:#123E6A; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">Subir Ahora</button>
+            </div>
+        </form>
+    </div>
+</div>
     </main>
     <script src="js/data.js"></script>
     <script src="js/profesor.js"></script>

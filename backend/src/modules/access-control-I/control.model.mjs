@@ -16,6 +16,18 @@ export class UserModel {
 			users: users
 		}
 	}
+
+	// Método para obtener todos los usaurios que sea estudiantes
+	static async getAllStudents(){
+		const [students] = await db.query(
+			`SELECT CONCAT(first_name, ' ', last_name) AS full_name FROM users u JOIN roles r ON u.role_id = r.role_id WHERE r.role_name = 'student'`
+		);
+		if(students.length === 0) return {error: 'No hay estudiantes registrados'};
+		return {
+			message: 'Estudiantes obtenidos correctamente',
+			students: students
+		}
+	}
 	
 	// Método para obtener un usuario por su ID
 	static async getUserById(userId) {
