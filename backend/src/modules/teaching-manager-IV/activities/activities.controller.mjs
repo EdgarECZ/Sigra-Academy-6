@@ -6,6 +6,21 @@ export class ActivitiesController {
         this.model = ActivitiesModel;
     }
 
+    // Controlador para obtener todas las actividades
+    getAllActivities = async (req, res) => {
+        try{
+            const result = await this.model.getAllActivities();
+            if(result.error) return res.status(404).json({error: result.error});
+            return res.status(200).json({
+                message: result.message,
+                activities: result.activities
+            });
+        }
+        catch(error){
+            return res.status(500).json({error: 'Error al obtener las actividades'});
+        }
+    }
+
     // Controlador para obtener todas las actividades de una asignación
     getActivitiesByAssignment = async (req, res) => {
         const {assignmentId} = req.params;
@@ -19,6 +34,23 @@ export class ActivitiesController {
         }
         catch(error){
             return res.status(500).json({error: 'Error al obtener las actividades'});
+        }
+    }
+
+    // Controlador para obtener todas las actividades asociadas a una materia (subject)
+    getActivitiesBySubject = async (req, res) => {
+        const { subjectId } = req.params;
+        try{
+            const result = await this.model.getActivitiesBySubject(Number(subjectId));
+            if(result.error) return res.status(404).json({error: result.error});
+            return res.status(200).json({
+                message: result.message,
+                activities: result.activities
+            });
+        }
+        catch(error){
+            console.error('Error en ActivitiesController.getActivitiesBySubject:', error);
+            return res.status(500).json({error: 'Error al obtener actividades por materia'});
         }
     }
 

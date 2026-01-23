@@ -6,8 +6,12 @@ const router = Router();
 const controller = new ActivitiesController({ActivitiesModel});
 
 // Rutas relacionadas a las actividades
+// Ruta para obtener todas las actividades
+router.get('/all', controller.getAllActivities);
 // Ruta para obtener todas las actividades de una asignación
 router.get('/assignments/:assignmentId/activities', controller.getActivitiesByAssignment);
+// Ruta para obtener todas las actividades asociadas a una materia (subject)
+router.get('/subject/:subjectId/activities', controller.getActivitiesBySubject);
 // Ruta para obtener una actividad por su ID
 router.get('/activity/:activityId', controller.getActivityById);
 // Ruta para cambiar la visibilidad de una actividad

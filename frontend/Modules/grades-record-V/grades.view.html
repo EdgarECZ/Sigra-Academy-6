@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>SIGRA | Registros de Calificaciones</title>
+	<link rel="stylesheet" href="grades.css" />
+</head>
+<body>
+	<header class="main-header">
+		<nav class="navbar">
+			<div class="brand">
+				<img class="brand-logo" src="../../Public/resources/Modulo-1/logo.png" alt="Logo SIGRA" onerror="this.style.display='none'"/>
+				<span>SIGRA</span>
+			</div>
+
+			<div class="nav-links">
+				<a href="../access-control-I/user-table.html">Inicio</a>
+				<a href="#" class="active">Registros</a>
+			</div>
+
+			<div class="profile-menu">
+				<button class="bell" aria-label="Notificaciones">🔔</button>
+				<button class="profile-button">SA</button>
+			</div>
+		</nav>
+	</header>
+
+	<main class="content-wrapper">
+		<div class="page-header">
+			<h1>Registros de Calificaciones</h1>
+			<p class="subtitle">Visualiza, edita y administra las calificaciones por actividad y materia.</p>
+		</div>
+
+		<section class="toolbar">
+			<label>
+				Materia
+				<select id="select-subject-id">
+					<option value="">-- Seleccione materia --</option>
+				</select>
+			</label>
+			<button id="btn-load" class="primary-button">Cargar Actividades</button>
+			<button id="btn-all" class="ghost-btn">Cargar Todos</button>
+		</section>
+
+		<section class="create-section">
+			<div class="table-card">
+				<h3>Crear nueva calificación</h3>
+				<div class="form-grid">
+					<label>Actividad
+						<select id="create-activity-select">
+							<option value="">-- Seleccione actividad --</option>
+						</select>
+					</label>
+					<label>Estudiante (Nombre)
+						<select id="create-student-select">
+							<option value="">-- Seleccione estudiante --</option>
+						</select>
+					</label>
+					<label>Nota
+						<input id="create-score" type="number" min="0" max="100" />
+					</label>
+					<label>Feedback
+						<textarea id="create-feedback" rows="1"></textarea>
+					</label>
+				</div>
+				<div style="margin-top:10px">
+					<button id="btn-create" class="primary-button">Crear calificación</button>
+				</div>
+			</div>
+		</section>
+
+		<section class="table-section">
+			<div class="table-card">
+				<div class="table-wrapper">
+					<table>
+						<thead>
+							<tr>
+								<th>Estudiante</th>
+								<th>Nota</th>
+								<th>Feedback</th>
+								<th>Actividad</th>
+								<th>Acciones</th>
+							</tr>
+						</thead>
+						<tbody id="grades-body">
+							<tr id="grades-loading"><td colspan="5">Ingrese un ID de actividad y presione "Cargar".</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<!-- Modal edición -->
+	<div id="modal-overlay" class="modal-overlay"></div>
+	<div id="modal-edit" class="modal">
+		<div class="modal-header">
+			<h2 id="modal-title">Editar calificación</h2>
+			<button id="modal-close" class="icon-link">✕</button>
+		</div>
+		<div class="modal-body">
+			<div class="modal-field">
+				<label style="font-size:13px;color:#666">Estudiante</label>
+				<div id="modal-student" style="font-weight:600;font-size:14px"></div>
+			</div>
+			<div class="modal-field">
+				<label style="font-size:13px;color:#666">Actividad</label>
+				<div id="modal-activity" style="font-weight:600;font-size:14px;color:#333"></div>
+			</div>
+			<div class="modal-field">
+				<label style="font-size:13px;color:#666">Nota</label>
+				<input id="modal-score" type="number" min="0" max="100" />
+			</div>
+			<div class="modal-field">
+				<label style="font-size:13px;color:#666">Feedback</label>
+				<textarea id="modal-feedback" rows="4"></textarea>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button id="modal-save" class="primary-button">Guardar</button>
+		</div>
+	</div>
+
+	<script src="grades.js"></script>
+</body>
+</html>

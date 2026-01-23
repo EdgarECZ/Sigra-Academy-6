@@ -35,7 +35,7 @@ export class TeacherAssignmentModel {
         // Se verifica que el profesor exista
         const [existingTeacher] = await db.query(
             `SELECT u.* FROM users u JOIN roles r ON u.role_id = r.role_id
-            WHERE u.user_id = ? AND r.role_name = 'Docente'`,
+            WHERE u.user_id = ? AND r.role_name = 'teacher'`,
             [teacherId]
         );
         if (existingTeacher.length === 0) return { error: 'Profesor no encontrado' };
@@ -159,7 +159,7 @@ export class TeacherAssignmentModel {
         if (existingAssignment.length === 0) return { error: 'Asignación no encontrada' };
         // Si existe, se obtiene el profesor y la asignación
         const [assignment] = await db.query(
-            `SELECT ta.section_id, u.user_id, CONCAT(u.first_name, ' ', u.last_name) as name, 'Docente' as role
+            `SELECT ta.section_id, u.user_id, CONCAT(u.first_name, ' ', u.last_name) as name, 'teacher' as role
             FROM teacher_assignments ta JOIN users u ON ta.teacher_user_id = u.user_id
             WHERE ta.assignment_id = ?`,
             [assignmentId]
@@ -190,7 +190,7 @@ export class TeacherAssignmentModel {
         const [existingTeacher] = await db.query(
             `SELECT u.*, r.role_name FROM users u
             JOIN roles r ON u.role_id = r.role_id
-            WHERE u.user_id = ? AND r.role_name = 'Docente'`,
+            WHERE u.user_id = ? AND r.role_name = 'teacher'`,
             [teacher_user_id]
         );
         const [existingSubject] = await db.query(
